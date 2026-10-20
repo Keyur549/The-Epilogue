@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Player — જ્ઞાન શોધ · The Epilogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f3ee;--card:#fff;--ink:#1f2430;--muted:#6b7280;--accent:#7c3aed;--accent2:#f59e0b;--sky:#38bdf8;--green:#16a34a;--red:#dc2626;--yellow:#eab308;--line:#e5e7eb;}
+:root{--bg:#f4f0ff;--card:#fff;--ink:#2a2150;--muted:#7a7498;--accent:#7c3aed;--accent2:#f59e0b;--sky:#38bdf8;--green:#16a34a;--red:#dc2626;--yellow:#eab308;--line:#e2daf8;}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141220;--card:#1f1d2e;--ink:#f1f0f6;--muted:#a1a1b5;--line:#33314a;}}
 *{box-sizing:border-box;} body{margin:0;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;}
 .wrap{max-width:640px;margin:0 auto;padding:20px 16px 40px;}
@@ -50,7 +51,7 @@ input,select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--lin
 @keyframes popS{0%{transform:scale(.85)}100%{transform:scale(1)}}
 @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
 .big-winner{position:relative;overflow:hidden;text-align:center;background:linear-gradient(160deg,var(--accent),var(--accent2));color:#fff;padding:34px 12px;border-radius:18px;
-  box-shadow:0 0 0 3px rgba(255,215,0,.55), 0 0 40px 8px rgba(255,215,0,.35); animation:pop .6s ease-out, glowPulse 1.8s ease-in-out infinite;}
+  box-shadow:0 0 0 3px rgba(255,215,0,.55), 0 0 40px 8px rgba(255,215,0,.35); animation:popS .6s ease-out, glowPulse 1.8s ease-in-out infinite;}
 .big-winner::before{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;
   background:linear-gradient(120deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-20deg);animation:sweep 2.6s ease-in-out infinite;pointer-events:none;}
 .big-winner .crown{font-size:3.2rem;animation:crownPulse 1.3s ease-in-out infinite;display:inline-block;}
@@ -93,6 +94,24 @@ input,select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--lin
 #scmsg .nt{font-size:.82rem;font-weight:700;color:#1a1033;background:linear-gradient(90deg,#f6d365,#ffe9a8,#f6d365);border-radius:12px;padding:7px 10px;line-height:1.45}
 #scmsg .s{font-size:.85rem;font-weight:700;color:#ffd96b;border:1px dashed #d4af37;border-radius:12px;padding:7px 10px;line-height:1.5}
 #sccv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+
+/* ===== Premium look (Epilogue) ===== */
+body{font-family:'Noto Sans Gujarati','Segoe UI',system-ui,sans-serif;line-height:1.55;background:var(--bg) radial-gradient(900px 360px at 50% -80px,rgba(124,58,237,.14),transparent 70%) no-repeat;}
+h1{color:#5b21b6;letter-spacing:.2px;font-weight:800;} h2{color:#7c3aed;font-weight:800;}
+.card{border-radius:18px;border:1px solid var(--line);box-shadow:0 6px 22px rgba(91,33,182,.09);}
+.btn{background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-radius:12px;padding:11px 18px;font-weight:800;box-shadow:0 4px 12px rgba(109,40,217,.3);transition:transform .12s,box-shadow .12s}
+.btn:active{transform:translateY(1px) scale(.98);box-shadow:0 1px 4px rgba(109,40,217,.3)}
+.btn.secondary{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3b2a00;box-shadow:0 4px 12px rgba(245,158,11,.35)}
+.btn.ghost{background:transparent;box-shadow:none;border:2px solid #8b5cf6;color:#6d28d9}
+input,select{border:1.5px solid var(--line);border-radius:12px;padding:11px;font:inherit;background:var(--card)}
+input:focus,select:focus{outline:none;border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.2)}
+.cell{border-radius:11px;border:1.5px solid var(--line);background:var(--card);box-shadow:0 1px 3px rgba(91,33,182,.08);font-weight:700}
+.cell.marked{background:linear-gradient(145deg,#7dd3fc,#0ea5e9);color:#00293b;border-color:#0284c7}
+.cell.green{background:linear-gradient(145deg,#4ade80,#16a34a)}.cell.red{background:linear-gradient(145deg,#f87171,#dc2626)}
+.zc{border-radius:10px;background:var(--card)}.zc.zk{background:linear-gradient(145deg,#7dd3fc,#0ea5e9)}
+.zbtn{box-shadow:0 6px 16px rgba(124,58,237,.35);border-radius:14px;border:2px solid rgba(255,255,255,.35)}
+.zlive,.zsum{border-radius:12px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body{background:var(--bg)}h1,h2{color:#c4b5fd}.card{box-shadow:0 6px 22px rgba(0,0,0,.35)}}
 </style>
 </head>
 <body>
@@ -749,7 +768,7 @@ function winnerBannerHTML(r){
 }
 
 function render(){
-  const el=document.getElementById('app');
+  const el=document.getElementById('app'); const prevKeep=el.__last; el.__last=null;
   if(!state.code){
     const pr=state.profile;
     el.innerHTML=`<h1>🎴 Player Join</h1>
@@ -867,6 +886,8 @@ function render(){
     }
   }
   body+=zcOverlay(r,p);
+  if(prevKeep===body){ el.__last=body; return; }   // same HTML: do not rebuild (rebuilding restarts animations = flicker/fade)
+  el.__last=body;
   el.innerHTML=body;
 }
 setInterval(()=>{ if(state.room && state.room.status==='question') render(); },1000);

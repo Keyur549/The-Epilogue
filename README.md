@@ -1,3 +1,8 @@
+# 🆕 Projector · Sound · Zone Battle
+- **📺 Projector Mode (Host):** Host screen par nichey jamne 📺 button. Hall na motā screen/TV par kholo (full screen, ✕ ke Esc thi bandh). Lobby ma motu QR + Room Code + Players ni sankhya; prashn vakhte motu prashn, motu Timer ane Zone-wise progress; Result vakhte darek Winner motā akshar ma avatar sathe.
+- **🔊 Sound + Vibration (Player):** Khanu 🔒 thay, chhella 5 second no Timer, navo prashn, Claim ane Winner reveal par avaj ane (Android ma) vibration. Header ma 🔊/🔇 thi bandh/chalu — yaad rahe.
+- **⚔️ Zone vs Zone (Player):** Prashn chalu hoy tyare darek Zone na kitā Players e jawab apyo teni live bar (potano Zone highlight). Epilogue ma Zone Card nā 🔒 pan. Score ke sacho-khoto nathi batavtu — suspense jali rahe.
+
 # 🎴 જ્ઞાન શોધ – The Epilogue (Part-03)
 **નવું શું છે (The Conclusion થી):** Fast/Streak/Power Cards કાઢ્યા, તેના બદલે —
 - **36 Questions, 25 ખાનાંનો Card.** સાચો જવાબ +1, ખોટો −1.

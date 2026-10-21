@@ -306,6 +306,7 @@ function zoneSummary(room){
   return Object.values(room.zoneInfo||{}).map(z=>({lockLines:z.lockLines,lockedCells:z.lockedCells,zone:z.zone,count:z.count,active:z.active,avg:z.avg,total:z.total,bonus:z.bonus,lines:z.lines,full:z.full,lineTs:z.lineTs,lineMs:z.lineMs,fhTs:z.fhTs,fhMs:z.fhMs,okCells:z.okCells,rank:z.rank}))
     .sort((a,b)=>a.rank-b.rank);
 }
+function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='question'||room.status==='locked'); for(const p of Object.values(room.players||{})){ const z=String((p&&p.zone)||'').trim(); if(!z) continue; const k=z.toLowerCase(); const o=m[k]||(m[k]={z,i:Object.keys(m).length,n:0,a:0,l:0}); o.n++; if(live&&q!=null&&Object.values(p.marks||{}).includes(q)) o.a++; } if(room.zlock) for(const k in m){ const zl=room.zlock[k]; if(zl&&zl.locks) m[k].l=zl.locks.reduce((s,x)=>s+(x?1:0),0); } return Object.values(m).slice(0,40); }
 function slimBase(room){
   const { clientMap, players, zoneCards, zoneSet, zoneInfo, results, zlock, ...rest } = room;
   const n = Object.keys(players).length;
@@ -314,11 +315,13 @@ function slimBase(room){
     for (const k of ['line1','line2','line3','line4','line5','full','top1','top2','top3']){ const v=(room.winners||{})[k]; if (typeof v==='string' && players[v]) keep[v]={...players[v], res:results[v]}; }
     return {base:{...rest, nPlayers:n, zoneS:zoneSummary(room)}, keep};
   }
-  return {base:{...rest, nPlayers:n, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud}))}, keep:{}};
+  return {base:{...rest, nPlayers:n, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud})), zoneProg: zoneProgOf(room)}, keep:{}};
 }
+function zoneListOf(room){ const seen=[],m={}; for(const p of Object.values(room.players||{})){ const k=String((p&&p.zone)||'').trim().toLowerCase(); if(k&&!(k in m)){ m[k]=seen.length; seen.push(k);} } return m; }
 function slimFor(room, S, name){
   const players = {...S.keep}; const out = {...S.base, players};
   const p = name && room.players[name];
+  { const zi=(S.zi||(S.zi=zoneListOf(room))); const pz=p?String(p.zone||'').trim().toLowerCase():''; out.zoneIdx=(pz in zi)?zi[pz]:null; }
   if (p){
     const k = zkey(p);
     if (room.status==='revealed'){ players[name] = {...p, res:room.results[name]}; if (k && room.zoneInfo[k]) out.myZone = room.zoneInfo[k]; }

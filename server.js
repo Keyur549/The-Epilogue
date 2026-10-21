@@ -308,7 +308,7 @@ function zoneSummary(room){
 }
 function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='question'||room.status==='locked'); for(const p of Object.values(room.players||{})){ const z=String((p&&p.zone)||'').trim(); if(!z) continue; const k=z.toLowerCase(); const o=m[k]||(m[k]={z,i:Object.keys(m).length,n:0,a:0,l:0}); o.n++; if(live&&q!=null&&Object.values(p.marks||{}).includes(q)) o.a++; } if(room.zlock) for(const k in m){ const zl=room.zlock[k]; if(zl&&zl.locks) m[k].l=zl.locks.reduce((s,x)=>s+(x?1:0),0); } return Object.values(m).slice(0,40); }
 function slimBase(room){
-  const { clientMap, players, zoneCards, zoneSet, zoneInfo, results, zlock, ...rest } = room;
+  const { clientMap, tokens, players, zoneCards, zoneSet, zoneInfo, results, zlock, ...rest } = room;
   const n = Object.keys(players).length;
   if (room.status==='revealed'){
     const keep = {};
@@ -373,7 +373,7 @@ function emitZoneLive(code, r){
 
 const SEEN = {};   // code|key -> last time that player's browser talked to us (join, tap, resync every 4 s)
 function seen(code,key){ if (key) SEEN[code+'|'+key]=Date.now(); }
-const ONLINE_MS = +process.env.ONLINE_MS || 15000;
+const ONLINE_MS = +process.env.ONLINE_MS || 10000;
 let _zt = 0;
 setInterval(() => {
   _zt++;
@@ -390,9 +390,15 @@ function bindSock(socket, r, code, name){
   const p = r.players[name]; const k = p && zkey(p);
   if (k){ ensureZoneCard(r,k); socket.join(code+'#z:'+k); }
 }
-function bindName(socket, r, code, clientId){
-  const nm = clientId && r.clientMap && r.clientMap[clientId];
-  if (nm && r.players[nm]) bindSock(socket, r, code, nm);
+
+function newToken(){ return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10); }
+function tokFor(r,key){ if(!r.tokens) r.tokens={}; if(!r.tokens[key]) r.tokens[key]=newToken(); return r.tokens[key]; }
+function tokOwner(r,token){ if(!token||!r.tokens) return null; return Object.keys(r.tokens).find(k=>r.tokens[k]===token && r.players[k]) || null; }
+function bindName(socket, r, code, clientId, key, token){
+  // a player is identified ONLY by his secret token (given at join) — never by a browser-wide id, so two people on one phone/browser can never get each other's card
+  const k = (key && r.tokens && r.tokens[key]===token && r.players[key]) ? key : tokOwner(r, token);
+  if (k){ bindSock(socket, r, code, k); return k; }
+  return null;
 }
 
 // drop event floods from one socket (a stuck/abusive client); normal play is a few events per second
@@ -401,9 +407,9 @@ setInterval(() => { const cut = Date.now() - 48*3600*1000; for (const c of Objec
 io.on('connection', (socket) => {
   let _n = 0, _t = Date.now();
   socket.use((pkt, next) => { const now = Date.now(); if (now-_t>1000){ _t=now; _n=0; } if (++_n>60) return; next(); });
-  socket.on('subscribe', ({code, host, clientId}, cb) => {
+  socket.on('subscribe', ({code, host, clientId, key, token}, cb) => {
     if (rooms[code]){
-      socket.join(code); if(!host) bindName(socket, rooms[code], code, clientId);
+      socket.join(code); if(!host) bindName(socket, rooms[code], code, clientId, key, token);
       if (host){ socket.join(code+'#h'); scheduleBackup(code); cb && cb({ok:true, room: publicRoom(rooms[code])}); }
       else { const Sx = slimBase(rooms[code]); cb && cb({ok:true, room: slimFor(rooms[code], Sx, socket.data&&socket.data.code===code?socket.data.name:null)}); }
     }
@@ -411,11 +417,12 @@ io.on('connection', (socket) => {
   });
 
   // Players call this every few seconds: re-joins the room after a server restart/restore.
-  socket.on('resync', ({code, clientId}, cb) => {
+  socket.on('resync', ({code, clientId, key, token}, cb) => {
     const r = rooms[code];
     if (!r){ cb && cb({ok:false}); return; }
-    if (socket.rooms.has(code) && socket.data && socket.data.code===code) { seen(code,socket.data.name); cb && cb({ok:true}); return; }
-    socket.join(code); bindName(socket, r, code, clientId); const Sy = slimBase(r); cb && cb({ok:true, room: slimFor(r, Sy, socket.data&&socket.data.code===code?socket.data.name:null)});
+    const mineKey = (key && r.tokens && r.tokens[key]===token && r.players[key]) ? key : tokOwner(r, token);
+    if (socket.rooms.has(code) && socket.data && socket.data.code===code && (!mineKey || socket.data.name===mineKey)) { seen(code,socket.data.name); cb && cb({ok:true}); return; }
+    socket.join(code); bindName(socket, r, code, clientId, key, token); const Sy = slimBase(r); cb && cb({ok:true, room: slimFor(r, Sy, socket.data&&socket.data.code===code?socket.data.name:null)});
   });
 
   // Host restores a game from the backup kept in the host's browser (after server sleep/restart).
@@ -571,18 +578,26 @@ io.on('connection', (socket) => {
   });
 
 
-  socket.on('player:join', ({code,name,zone,avatar,clientId}, cb) => {
+  socket.on('player:join', ({code,name,zone,avatar,clientId,token}, cb) => {
     const r = rooms[code]; if(!r){ cb&&cb({ok:false,error:'Room code મળ્યો નહિ.'}); return; }
     name=(name||'').trim(); zone=(zone||'').trim();
     if(!name){ cb&&cb({ok:false,error:'નામ લખો.'}); return; }
     if(!r.clientMap) r.clientMap = {};
     const norm = x => (x||'').trim().toLowerCase();
+    // 0) the player's own secret token => always his own card (refresh / network drop / reopen)
+    { const tk = tokOwner(r, token);
+      if(tk && norm(r.players[tk].baseName)===norm(name) && norm(r.players[tk].zone)===norm(zone)){
+        if (clientId) r.clientMap[clientId] = tk;
+        socket.join(code); bindSock(socket, r, code, tk);
+        cb && cb({ok:true, room: slimFor(r,slimBase(r),tk), yourKey:tk, resumed:true, token:tokFor(r,tk)});
+        touchHost(code); return;
+      } }
     // 1) same device + same name + same zone => reconnecting (refresh / network drop): resume own card
     const mine = clientId && r.clientMap[clientId];
     if(mine && r.players[mine] && norm(r.players[mine].baseName)===norm(name) && norm(r.players[mine].zone)===norm(zone)){
       socket.join(code); bindSock(socket, r, code, mine);
       const S0 = slimBase(r);
-      cb && cb({ok:true, room: slimFor(r,S0,mine), yourKey:mine, resumed:true});
+      cb && cb({ok:true, room: slimFor(r,S0,mine), yourKey:mine, resumed:true, token:tokFor(r,mine)});
       touchHost(code);
       return;
     }
@@ -596,10 +611,10 @@ io.on('connection', (socket) => {
         if (clientId) r.clientMap[clientId] = dupKey;
         socket.join(code); bindSock(socket, r, code, dupKey);
         const S0 = slimBase(r);
-        cb && cb({ok:true, room: slimFor(r,S0,dupKey), yourKey:dupKey, resumed:true});
+        cb && cb({ok:true, room: slimFor(r,S0,dupKey), yourKey:dupKey, resumed:true, token:tokFor(r,dupKey)});
         touchHost(code); return;
       }
-      cb&&cb({ok:false,error:'⚠️ આ નામ અને Zone વાળો Player હમણાં Game માં ચાલુ (Online) છે. જો તે તમે જ હો તો જૂનું Tab/Browser બંધ કરી 15 સેકન્ડ પછી ફરી Join કરો. બીજી વ્યક્તિ હો તો બીજું નામ (અથવા અટક) વાપરો.'}); return;
+      cb&&cb({ok:false, retry:true, error:'⏳ આ નામ + Zone વાળો Player હમણાં Online દેખાય છે. થોડી સેકન્ડમાં આપોઆપ ફરી પ્રયત્ન થશે… (જો બીજો Player હોય તો નામમાં અટક/ઉપનામ ઉમેરો)'}); return;
     }
     if (r.maxPlayers && Object.keys(r.players).length>=r.maxPlayers){ cb&&cb({ok:false,error:'Room ભરાઈ ગયો છે.'}); return; }
     // 3) same name in a different zone is allowed; give it a unique internal key "Name (2)"
@@ -612,7 +627,7 @@ io.on('connection', (socket) => {
     if(clientId) r.clientMap[clientId] = key;
     socket.join(code); bindSock(socket, r, code, key);
     const S1 = slimBase(r);
-    cb && cb({ok:true, room: slimFor(r,S1,key), yourKey:key});
+    cb && cb({ok:true, room: slimFor(r,S1,key), yourKey:key, token:tokFor(r,key)});
     touchHost(code);
   });
 

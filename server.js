@@ -116,7 +116,7 @@ function randCode(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='GYAN'; f
 const rooms = {}; // code -> room object
 
 // ---------- Epilogue: hidden cells, Life Lines, Zone card ----------
-const LIFE_KEYS = ['akshar','madad','change','streak','recharge'];
+const LIFE_KEYS = ['safety','madad','change','streak','recharge'];
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
 const ZONE_LINE_PTS=3, ZONE_LINE_MAX=5, ZONE_FULL_PTS=15;
@@ -177,7 +177,8 @@ function zoneCompute(r, full){
       const q = r.questions[qi]; if (!q || q.a===undefined) continue;
       const act = z.names.filter(n=>first[n]<=pos[qi]).length;       // active AT that question, so a lock never changes later
       let safe=false; const cnt={};
-      for (const n of z.names){ const p=r.players[n]; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; } }
+      for (const n of z.names){ const p=r.players[n]; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; }
+        if (p.lives && (p.lives.safety===qi || (p.lifeOld && p.lifeOld.safety && p.lifeOld.safety.includes(qi)))) safe=true; }
       const need = zoneNeed(r, act, safe); const ts = closeTs(r, qi); let any=false;
       for (const [t,c] of Object.entries(cnt).sort((a,b)=>b[1]-a[1])){
         if (act<=0 || c<need) continue;
@@ -252,7 +253,7 @@ function computeAll(r){
     for (const p of Object.values(r.players)){ const ci=markCell(p,qi); if(ci===undefined) none++; else if(p.card[ci]===q.a) c++; else w++; }
     return {qi, correct:c, wrong:w, none, pct: Math.round(c*100/Math.max(1,c+w+none))};
   });
-  const LS = {akshar:0,madad:0,change:0,streak:0,recharge:0};
+  const LS = {safety:0,madad:0,change:0,streak:0,recharge:0};
   for (const p of Object.values(r.players)) for (const k of LIFE_KEYS) LS[k] += ((p.lives && p.lives[k]!=null)?1:0) + ((p.lifeOld&&p.lifeOld[k])?p.lifeOld[k].length:0);
   r.lifeStats = LS;
   const HS = {gemHit:0, gemTotal:0, starHit:0, starTotal:0, bombHit:0, bombTotal:0};
@@ -759,13 +760,8 @@ io.on('connection', (socket) => {
       p.lives.madad = cur; p._md = {qi:cur, list, n:tot};
       touch(socket,code,name); return cb && cb({ok:true, md:p._md});
     }
+    if (life==='safety'){ p.lives.safety = cur; touch(socket,code,name); return cb && cb({ok:true}); }   // 🛡 Safety Net: lowers the Zone's lock limit for THIS question (never stacks)
     if (!answerOnCard(r,p,cur)) return fail('આ પ્રશ્નનો જવાબ તમારા Card માં નથી. Life Line વપરાઈ નથી.');
-    if (life==='akshar'){
-      const ch = firstAkshar(q.a);
-      const cells = []; p.card.forEach((t,i)=>{ if (firstAkshar(t)===ch) cells.push(i); });
-      p.lives.akshar = cur; p._ak = {qi:cur, ch, cells};
-      touch(socket,code,name); return cb && cb({ok:true, ak:p._ak});
-    }
   });
 
   socket.on('player:claim', ({code,name,type}) => {

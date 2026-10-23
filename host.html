@@ -2096,7 +2096,7 @@ async function downloadExcel(){
 
     const wonCats = WINNER_ORDER.filter(k=>!/^zone/.test(k)&&w[k]===name).map(k=>WINNER_LABELS[k]);
     return {name, zone:p.zone||'', avatar:p.avatar||'', correct:res.correctCount,
-      wrong:res.cellState.filter(s=>s==='red').length, netScore:res.netScore, personal:res.personal, zoneBonus:res.zoneBonus, gems:res.gems, stars:res.stars, bombs:res.bombs, dd:res.streakPts, life:['akshar','madad','change','streak','recharge'].filter(k=>(p.lives||{})[k]!=null).map(k=>({akshar:'🔤',madad:'🤝',change:'🔄',streak:'🔥',recharge:'♻️'}[k])+'Q'+((p.lives[k])+1)).join(' ')||'—', validLines, invalidLines,
+      wrong:res.cellState.filter(s=>s==='red').length, netScore:res.netScore, personal:res.personal, zoneBonus:res.zoneBonus, gems:res.gems, stars:res.stars, bombs:res.bombs, dd:res.streakPts, life:['safety','madad','change','streak','recharge'].filter(k=>(p.lives||{})[k]!=null).map(k=>({safety:'🛡',madad:'🤝',change:'🔄',streak:'🔥',recharge:'♻️'}[k])+'Q'+((p.lives[k])+1)).join(' ')||'—', validLines, invalidLines,
       fullHouse:res.fullHouse?'Yes':'No', 
       lineWinner: wonCats.length?wonCats.join(', '):'—',
       winTime: wonCats.length?WINNER_ORDER.filter(k=>w[k]===name&&!/^top/.test(k)&&!/^zone/.test(k)).map(k=>WINNER_LABELS[k]+': '+fmtDur(w[k+'_ms'])).join(' | '):'—'};
@@ -2158,7 +2158,7 @@ async function downloadExcel(){
   ws5.columns=[{header:'Item',key:'k',width:34},{header:'Count',key:'v',width:12},{header:'Out of',key:'o',width:12}];
   ws5.getRow(1).eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'},size:12}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF7C3AED'}}; c.alignment={horizontal:'center'}; });
   { const LS=r.lifeStats||{}, HS=r.hidStats||{}, tp=Object.keys(r.players).length;
-    [['🔤 પહેલો અક્ષર વાપર્યો',LS.akshar,tp],['🤝 Zone Madad વાપર્યું',LS.madad,tp],['🔄 Change Answer વાપર્યું',LS.change,tp],['🔥 Bonus Streak વાપર્યું',LS.streak,tp],['♻️ Recharge વાપર્યું',LS.recharge,tp],
+    [['🛡 Safety Net વાપર્યું',LS.safety,tp],['🤝 Zone Madad વાપર્યું',LS.madad,tp],['🔄 Change Answer વાપર્યું',LS.change,tp],['🔥 Bonus Streak વાપર્યું',LS.streak,tp],['♻️ Recharge વાપર્યું',LS.recharge,tp],
      ['💎 Jackpot મળ્યા (સાચા જવાબ પર)',HS.gemHit,HS.gemTotal],['⭐ Star મળ્યા',HS.starHit,HS.starTotal],['💣 Bomb ફૂટ્યા (ખોટા જવાબ પર)',HS.bombHit,HS.bombTotal]].forEach(x=>ws5.addRow({k:x[0],v:x[1],o:x[2]})); }
 
   // ---------- Summary sheet (static values, ready to show on screen) ----------

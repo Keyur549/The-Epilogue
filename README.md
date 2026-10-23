@@ -1,3 +1,14 @@
+## 🆕 Epilogue: Safety Net pacho (Akshar kadhyu)
+- Life lines: Safety Net, Madad, Change, Bonus Streak, Recharge
+- Safety Net: te question par Zone ni Lock limit ochhi thay (host ni Zone rule ma set %)
+Upload only: server.js, host.html, player.html
+
+## 🆕 Conclusion: Phases + Fast Round Bet
+- 4 Phase = 8 normal + 9mo Fast Round; projector/host parthi Phase 2,3,4 shuru
+- Fast Round par Bet (sacho +10, khoto/na aapyo -5), Top-3 speed +3/+2/+1
+- Scratch Card level ni limit navi score pramane
+Upload only: server.js, host.html, player.html
+
 ## 🆕 Update 3
 - 🧪 Practice: 5 question, 5×5 card ma 1 Line banavo, Claim karo ane Claim Time dekhay
 - Report ma 5×5 card na darek khana par Question badge (Q3...)

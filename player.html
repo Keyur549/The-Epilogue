@@ -29,7 +29,7 @@ input,select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--lin
 .zgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0}.zc{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:.68rem;font-weight:600;padding:2px;border-radius:7px;border:1px solid var(--line);background:var(--bg);overflow:hidden}.zc em{font-style:normal;font-size:.62rem;font-weight:800}.zc.zok{background:var(--green);color:#fff}.zc.zno{background:var(--red);color:#fff}
 .zsum{background:#fff7d6;border:2px solid #f59e0b;border-radius:12px;padding:8px 10px;color:#3b2a00;font-weight:600;font-size:.88rem}
 .runbar{text-align:center;font-weight:700}
-.zc.zk{background:var(--sky);color:#fff;font-size:1.2rem}.zov{position:fixed;inset:0;z-index:60;background:rgba(10,8,25,.6);overflow:auto;padding:12px}.zin{max-width:560px;margin:0 auto}.zline{background:#e0f2fe;color:#0c4a6e;border-radius:10px;padding:6px 9px;margin:5px 0;font-weight:700;font-size:.85rem}.zbtn{display:flex;justify-content:space-between;align-items:center;width:100%;background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;border:0;border-radius:12px;padding:11px 14px;font-weight:800;font-size:.95rem;margin:8px 0;cursor:pointer}.bk{max-width:340px;margin:8px auto 0;text-align:left}.bk div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed #9ca3af;font-size:.9rem}.bk .sub{font-weight:900;border-bottom:2px solid #6b7280}
+.zc.zk{background:var(--sky);color:#fff;font-size:.68rem}.zc .zl{font-style:normal;font-size:.95rem;line-height:1;display:block;margin-top:1px}.zov{position:fixed;inset:0;z-index:60;background:rgba(10,8,25,.6);overflow:auto;padding:12px}.zin{max-width:560px;margin:0 auto}.zline{background:#e0f2fe;color:#0c4a6e;border-radius:10px;padding:6px 9px;margin:5px 0;font-weight:700;font-size:.85rem}.zbtn{display:flex;justify-content:space-between;align-items:center;width:100%;background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;border:0;border-radius:12px;padding:11px 14px;font-weight:800;font-size:.95rem;margin:8px 0;cursor:pointer}.bk{max-width:340px;margin:8px auto 0;text-align:left}.bk div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed #9ca3af;font-size:.9rem}.bk .sub{font-weight:900;border-bottom:2px solid #6b7280}
 
 .pwr{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:6px 0}.cell.hint{outline:3px solid #f59e0b;box-shadow:0 0 10px #f59e0b;animation:cpg 1.2s infinite alternate}@keyframes cpg{to{box-shadow:0 0 18px #fbbf24}}.cpy{background:#fff7d6;border:2px solid #f59e0b;border-radius:12px;padding:8px 10px;margin:6px 0;color:#3b2a00;font-weight:700;font-size:.9rem}.cpy i{font-style:normal;float:right;font-weight:900}
 .pwr button{font:inherit;font-size:.7rem;font-weight:800;border-radius:12px;padding:6px 2px;border:2px solid #f59e0b;background:linear-gradient(160deg,#fff7d6,#fde68a);color:#3b2a00;line-height:1.25;cursor:pointer}
@@ -306,11 +306,11 @@ function uiContinue(){ let s=null; try{ s=JSON.parse(localStorage.getItem('quizS
 
 function playerMark(ci){ socket.emit('player:mark',{code:state.code,name:state.name,ci}); }
 socket.on('zlive', d=>{ state.zl=d; if(state.room&&state.room.status==='question') render(); });
-const LIFE_DEFS=[['akshar','🔤','પહેલો અક્ષર'],['madad','🤝','Zone Madad'],['change','🔄','Change'],['streak','🔥','Bonus Streak'],['recharge','♻️','Recharge']];
+const LIFE_DEFS=[['safety','🛡','Safety Net'],['madad','🤝','Zone Madad'],['change','🔄','Change'],['streak','🔥','Bonus Streak'],['recharge','♻️','Recharge']];
 function useLife(k,target){
   if(k==='recharge'&&!target){ state.rcPick=!state.rcPick; render(); return; }
   state.rcPick=false;
-  const MSG={streak:'🔥 Bonus Streak ચાલુ! આ + આગળના 2 પ્રશ્નના જવાબ બધા સાચા તો +10, એક પણ ખોટો/ખાલી તો −5.',recharge:'♻️ Life Line ફરી ચાલુ થઈ ગઈ! હવે આવતા પ્રશ્નથી તે ફરી વાપરી શકશો.',akshar:'🔤 પહેલો અક્ષર નીચે દેખાય છે – એ અક્ષરવાળાં ખાનાં ચમકે છે.',madad:'🤝 તમારા Zone ના સૌથી વધુ જવાબ નીચે દેખાય છે.',change:'🔄 Change ચાલુ: સમય પૂરો થાય એ પહેલાં નવું ખાનું દબાવો (1 વાર).',double:'🎯 Double Down ચાલુ: આ પ્રશ્નનો ±1 બમણો થશે.'};
+  const MSG={streak:'🔥 Bonus Streak ચાલુ! આ + આગળના 2 પ્રશ્નના જવાબ બધા સાચા તો +10, એક પણ ખોટો/ખાલી તો −5.',recharge:'♻️ Life Line ફરી ચાલુ થઈ ગઈ! હવે આવતા પ્રશ્નથી તે ફરી વાપરી શકશો.',safety:'🛡 Safety Net ચાલુ! આ પ્રશ્ન પર તમારા Zone નું Lock થવાનું Limit ઓછું થયું.',madad:'🤝 તમારા Zone ના સૌથી વધુ જવાબ નીચે દેખાય છે.',change:'🔄 Change ચાલુ: સમય પૂરો થાય એ પહેલાં નવું ખાનું દબાવો (1 વાર).',double:'🎯 Double Down ચાલુ: આ પ્રશ્નનો ±1 બમણો થશે.'};
   socket.emit('player:life',{code:state.code,name:state.name,life:k,target:target},(res)=>{
     state.pmsg=(!res||!res.ok)?((res&&res.error)||'Life Line વાપરી શકાઈ નહિ.'):MSG[k];
     clearTimeout(state.pmsgT); state.pmsgT=setTimeout(()=>{ state.pmsg=''; render(); },5000);
@@ -320,24 +320,23 @@ function useLife(k,target){
 function stkIn(r,L,qi){ if(L.streak==null||qi==null) return false; const seq=r.usedIdx||[], pos=seq.indexOf(L.streak); return pos>=0 && seq.indexOf(qi)>=pos && seq.indexOf(qi)<pos+3; }
 function lifeHTML(r,p){
   const L=p.lives||{}, cur=r.curIdx, q=(r.status==='question'&&!r.paused), inQ=r.status==='question';
-  const usedHere=['akshar','madad','streak','recharge'].some(k=>L[k]===cur)&&inQ;
+  const usedHere=['safety','madad','streak','recharge'].some(k=>L[k]===cur)&&inQ;
   let h=`<div class="pwr">`;
   LIFE_DEFS.forEach(([k,ic,lb])=>{
     const used=L[k]!=null, act=(L[k]===cur&&inQ);
     let dis=!q||used||(k!=='change'&&usedHere);
     if(k==='change'&&(markCell(p,cur)===undefined||p.changed)) dis=true;
     if(k==='streak'&&(r.questions.length-(r.usedIdx||[]).length)<2) dis=true;
-    if(k==='recharge'&&!['akshar','madad','change','streak'].some(x=>L[x]!=null)) dis=true;
+    if(k==='recharge'&&!['safety','madad','change','streak'].some(x=>L[x]!=null)) dis=true;
     h+=`<button class="${act?'act':(used?'used':'')}" ${dis?'disabled':''} onclick="useLife('${k}')"><b>${ic}</b>${lb}${used&&!act?'<br>વપરાયું':(act?'<br>ચાલુ ✔':'')}</button>`;
   });
   h+=`</div>`;
-  if(inQ&&state.rcPick){ const names={akshar:'🔤 પહેલો અક્ષર',madad:'🤝 Zone Madad',change:'🔄 Change',streak:'🔥 Bonus Streak',recharge:'♻️ Recharge'}; const used=Object.keys(names).filter(x=>L[x]!=null);
+  if(inQ&&state.rcPick){ const names={safety:'🛡 Safety Net',madad:'🤝 Zone Madad',change:'🔄 Change',streak:'🔥 Bonus Streak',recharge:'♻️ Recharge'}; const used=Object.keys(names).filter(x=>L[x]!=null);
     h+=`<div class="cpy">♻️ કઈ વપરાઈ ગયેલી Life Line ફરી ચાલુ કરવી?<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">`+used.map(x=>`<button class="btn" style="padding:8px 10px" onclick="useLife('recharge','${x}')">${names[x]}</button>`).join('')+`</div></div>`; }
   if(inQ){
     const z=state.zl;
     if(p.zone&&z&&z.qi===cur) h+=z.pct!=null?`<div class="zlive">👥 તમારા Zone ના <b>${z.pct}%</b> Players એ આ પ્રશ્ન સાચો આપ્યો છે <span>(${z.c}/${z.n})</span><div class="zbar"><i style="width:${z.pct}%"></i></div><small>ઓછું % હોય તો 🤝 Madad / 🛡 Safety Net વિચારો</small></div>`:`<div class="zlive">👥 Zone નું live % — ઓછામાં ઓછા 3 active Players જવાબ આપે પછી દેખાશે</div>`;
     if(L.streak!=null){ const seq=r.usedIdx||[], pos=seq.indexOf(L.streak); const done=pos>=0?Math.min(3,seq.length-pos):0; if(pos>=0&&done<=3&&!(seq.length-pos>3)) h+=`<div class="cpy">🔥 Bonus Streak ચાલુ: પ્રશ્ન <b>${Math.min(3,done)}/3</b> — બધા સાચા તો <b>+10</b>, નહિ તો <b>−5</b>.</div>`; }
-    if(p._ak&&p._ak.qi===cur) h+=`<div class="cpy">🔤 સાચા જવાબનો પહેલો અક્ષર: <b style="font-size:1.4em">${esc(p._ak.ch)}</b></div>`;
     if(p._md&&p._md.qi===cur) h+=`<div class="cpy">🤝 તમારા Zone ના ${p._md.n} Players માંથી:`+p._md.list.map(x=>`<div>${esc(x.text)}<i>${x.pct}%</i></div>`).join('')+`<div style="font-weight:600;font-size:.78rem;margin-top:4px">⚠️ ભીડ ખોટી પણ હોઈ શકે.</div></div>`;
     if(L.change===cur&&!p.changed) h+=`<div class="pmsg">🔄 Change ચાલુ: નવું ખાનું દબાવો (1 વાર)</div>`;
   }
@@ -367,7 +366,7 @@ function playerResults(pname){ const p=state.room.players[pname]; return (p&&p.r
 const FXI={gem:'💎',star:'⭐',bomb:'💣'};
 function cardTags(r,p,res,qi){
   const L=p.lives||{}, t=[]; const ci=markCell(p,qi);
-  if(L.akshar===qi) t.push('🔤'); if(L.madad===qi) t.push('🤝'); if(L.change===qi) t.push('🔄'); if(stkIn(r,L,qi)) t.push('🔥'); if(L.recharge===qi) t.push('♻️');
+  if(L.safety===qi) t.push('🛡'); if(L.madad===qi) t.push('🤝'); if(L.change===qi) t.push('🔄'); if(stkIn(r,L,qi)) t.push('🔥'); if(L.recharge===qi) t.push('♻️');
   if(ci!==undefined){ if(res.fx[ci]&&(res.cellState[ci]==='green'||res.fx[ci]==='bomb'&&res.cellState[ci]==='red')) t.push(FXI[res.fx[ci]]); t.push('<b>'+(res.pts[ci]>0?'+':'')+res.pts[ci]+'</b>'); }
   return t.join(' ');
 }
@@ -394,8 +393,8 @@ function zoneCardHTML(r,p){
   card.forEach((t,i)=>{
     if(rev){ const c=mz.cell[i]; if(c.st===''){ g+=`<div class="zc">${esc(t)}</div>`; }
       else if(fl.has(i)) g+=`<div class="zc ${c.st==='ok'?'zok':'zno'}">${esc(t)}<em>${c.st==='ok'?'✅':'❌'} ${c.pct}%</em></div>`;
-      else g+=`<div class="zc zk">🔒</div>`; }
-    else g+=(zl.locks&&zl.locks[i])?`<div class="zc zk">🔒</div>`:`<div class="zc">${esc(t)}</div>`;
+      else g+=`<div class="zc zk">${esc(t)}<em class="zl">🔒</em></div>`; }
+    else g+=(zl.locks&&zl.locks[i])?`<div class="zc zk">${esc(t)}<em class="zl">🔒</em></div>`:`<div class="zc">${esc(t)}</div>`;
   });
   const pct=r.zonePct||30;
   let h=`<h2>🎴 Zone Card — ${esc(p.zone)}</h2><div class="muted">Zone ના active Players માંથી ≥${pct}% એ જે જવાબ પસંદ કર્યો તે ખાનું <b>🔒 લોક</b> થઈ જાય (તમારા Card ની જેમ). તે સાચો હતો કે ખોટો, અને Line ની કિંમત — <b>Reveal</b> પર જ ખબર પડે.</div>`;
@@ -559,7 +558,7 @@ function reportHtmlMine(){
   const rows=r.usedIdx.map(qi=>{ const ci=revMap[qi]; const given=ci!==undefined?p.card[ci]:'—'; const ok=ci!==undefined&&r.questions[qi].a===given; const none=ci===undefined;
     return `<tr class="${none?'n':(ok?'g':'b')}"><td>${qi+1}</td><td>${esc(r.questions[qi].q)}</td><td>${esc(given)}</td><td>${ok||none?'—':esc(r.questions[qi].a)}</td><td class="ic">${none?'—':(ok?'✅':'❌')}</td><td class="ic">${cardTags(r,p,res,qi)}</td></tr>`; }).join('');
   const cells=Array.from({length:25},(_,i)=>{ const st=res.cellState[i]; const f=res.fx[i]; const qn=p.marks[i]; return `<div class="c ${st}">${qn!==undefined?'<i class="qb">Q'+(qn+1)+'</i>':''}${esc(p.card[i])}${f?`<em>${FXI[f]}${res.pts[i]?(res.pts[i]>0?' +':' ')+res.pts[i]:''}</em>`:(res.pts[i]?`<em>${res.pts[i]>0?'+':''}${res.pts[i]}</em>`:'')}</div>`; }).join('');
-  const lifeNames={akshar:'🔤 પહેલો અક્ષર',madad:'🤝 Zone Madad',change:'🔄 Change',streak:'🔥 Bonus Streak'};
+  const lifeNames={safety:'🛡 Safety Net',madad:'🤝 Zone Madad',change:'🔄 Change',streak:'🔥 Bonus Streak'};
   const lifeUsed=Object.keys(lifeNames).map(k=>L[k]!=null?`${lifeNames[k]} (Q${L[k]+1})`:`<s>${lifeNames[k]}</s>`).join(' · ');
   const claims=Object.keys(p.claims||{}).map(k=>{ const c=p.claims[k]; return `${k==='full'?'Full House':k.replace('line','')+' Line'}: ${c.valid===true?'✅':'❌'} ${fmtTime(c.ts)}`; }).join(' · ')||'કોઈ Claim નહિ';
   const zbox=mz?`<div class="zb"><b>🎴 Zone ${esc(p.zone)}</b> — ✅ ${mz.okCells}/25 ખાનાં · 📏 ${mz.lines} Line${mz.full?' · 🏠 Full House':''} · Zone Bonus <b>+${mz.bonus}</b> · Zone Rank #${mz.rank}/${res.zones||''}${mz.fhTs?' · Full House '+fmtTime(mz.fhTs):''}</div>`:'';
@@ -940,7 +939,6 @@ function render(){
   for(let i=0;i<25;i++){
     let cls='cell'+(LT[i]?' inline':'');
     let hintOn=false;
-    if(inQ&&p._ak&&p._ak.qi===r.curIdx&&p._ak.cells.includes(i)) hintOn=true;
     if(inQ&&p._md&&p._md.qi===r.curIdx&&p._md.list.some(x=>x.text===p.card[i])) hintOn=true;
     if(hintOn) cls+=' hint';
     let extra='';

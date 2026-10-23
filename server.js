@@ -116,7 +116,7 @@ function randCode(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='GYAN'; f
 const rooms = {}; // code -> room object
 
 // ---------- Epilogue: hidden cells, Life Lines, Zone card ----------
-const LIFE_KEYS = ['akshar','madad','change','safety','streak','recharge'];
+const LIFE_KEYS = ['akshar','madad','change','streak','recharge'];
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
 const ZONE_LINE_PTS=3, ZONE_LINE_MAX=5, ZONE_FULL_PTS=15;
@@ -177,7 +177,7 @@ function zoneCompute(r, full){
       const q = r.questions[qi]; if (!q || q.a===undefined) continue;
       const act = z.names.filter(n=>first[n]<=pos[qi]).length;       // active AT that question, so a lock never changes later
       let safe=false; const cnt={};
-      for (const n of z.names){ const p=r.players[n]; if((p.lives && p.lives.safety===qi) || (p.lifeOld && (p.lifeOld.safety||[]).includes(qi))) safe=true; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; } }
+      for (const n of z.names){ const p=r.players[n]; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; } }
       const need = zoneNeed(r, act, safe); const ts = closeTs(r, qi); let any=false;
       for (const [t,c] of Object.entries(cnt).sort((a,b)=>b[1]-a[1])){
         if (act<=0 || c<need) continue;
@@ -252,7 +252,7 @@ function computeAll(r){
     for (const p of Object.values(r.players)){ const ci=markCell(p,qi); if(ci===undefined) none++; else if(p.card[ci]===q.a) c++; else w++; }
     return {qi, correct:c, wrong:w, none, pct: Math.round(c*100/Math.max(1,c+w+none))};
   });
-  const LS = {akshar:0,madad:0,change:0,safety:0,streak:0,recharge:0};
+  const LS = {akshar:0,madad:0,change:0,streak:0,recharge:0};
   for (const p of Object.values(r.players)) for (const k of LIFE_KEYS) LS[k] += ((p.lives && p.lives[k]!=null)?1:0) + ((p.lifeOld&&p.lifeOld[k])?p.lifeOld[k].length:0);
   r.lifeStats = LS;
   const HS = {gemHit:0, gemTotal:0, starHit:0, starTotal:0, bombHit:0, bombTotal:0};
@@ -467,6 +467,7 @@ io.on('connection', (socket) => {
     broadcast(code);
     cb&&cb({ok:true, added, total:Object.keys(r.players).length, hostKB:Math.round(hostBytes/1024), playerKB:Math.round(playerBytes/1024), ms});
   });
+  socket.on('host:botsPlay', ({code,on}, cb) => { const r=hostRoom(code); if(!r){ cb&&cb({ok:false}); return; } r.botsPlay=!!on; cb&&cb({ok:true,on:r.botsPlay}); });
   socket.on('host:clearBots', ({code}, cb) => {
     const r=hostRoom(code); if(!r){ cb&&cb({ok:false}); return; }
     let c=0; for(const k of Object.keys(r.players)) if(r.players[k].bot){ delete r.players[k]; c++; }
@@ -481,6 +482,13 @@ io.on('connection', (socket) => {
     r.cert=c; scheduleBackup(code); cb&&cb({ok:true});
   });
   socket.on('cert:get', ({code}, cb) => { const r=rooms[code]; cb&&cb({ok:!!r, cert:(r&&r.cert)||null, revealed:!!r&&r.status==='revealed'}); });
+  // 📶 how many players are really connected right now (players ping us every ~4 s)
+  socket.on('host:online', ({code}, cb) => {
+    const r = rooms[code]; if(!r || typeof cb!=='function') return;
+    const now = Date.now(); let on=0, tot=0; const off=[];
+    for (const k of Object.keys(r.players)){ const p=r.players[k]; if(p.bot) continue; tot++; const t=SEEN[code+'|'+k]||0; if(now-t <= ONLINE_MS+5000) on++; else off.push(k); }
+    cb({ok:true, online:on, total:tot, off:off.slice(0,12)});
+  });
   socket.on('host:joinTimer', ({code,sec}, cb) => {
     const r=rooms[code]; if(!r){ cb&&cb({ok:false}); return; }
     sec=Math.round(+sec); r.joinEnd = (sec>0 && sec<=3600) ? Date.now()+sec*1000 : null; broadcast(code); cb&&cb({ok:true});
@@ -558,7 +566,7 @@ io.on('connection', (socket) => {
     broadcast(code);
   });
 
-  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); broadcast(code); });
+  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); broadcast(code); });
 
   const REVEAL_MS=1600;       // how long the big number popup stays up before the question appears
   const SPIN_SAFETY_MS=6000;  // safety net only — if host's browser never confirms, auto-advance so the game can't get stuck
@@ -739,10 +747,6 @@ io.on('connection', (socket) => {
       if (markCell(p,cur)===undefined) return fail('પહેલા એક ખાનું દબાવો, પછી 🔄 Change વાપરો.');
       p.lives.change = cur; p.changed = false; touch(socket,code,name); return cb && cb({ok:true});
     }
-    if (life==='safety'){
-      if (!zk) return fail('Zone વગર Safety Net ન વપરાય.');
-      p.lives.safety = cur; touch(socket,code,name); return cb && cb({ok:true});
-    }
     if (life==='madad'){
       if (!zk) return fail('Zone વગર Zone Madad ન વપરાય.');
       const cnt = {}; let tot = 0;
@@ -792,4 +796,22 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// 🤖 Test bots that really answer (only when the host switched "Bots play" on) — for a full dry-run
+setInterval(()=>{
+  for (const code of Object.keys(rooms)){
+    const r=rooms[code]; if(!r || !r.botsPlay || r.status!=='question' || r.paused || r.curIdx==null) continue;
+    const q=r.questions[r.curIdx]; if(!q) continue; let changed=false;
+    for (const p of Object.values(r.players)){
+      if(!p.bot || !p.card || Object.values(p.marks||{}).includes(r.curIdx)) continue;
+      if(Math.random()>0.25) continue;
+      const free=[]; for(let i=0;i<25;i++) if(p.marks[i]===undefined) free.push(i);
+      if(!free.length) continue;
+      const right=p.card.indexOf(q.a); let ci;
+      if(right>=0 && p.marks[right]===undefined && Math.random()<0.7) ci=right; else { if(Math.random()<0.2) continue; ci=free[Math.floor(Math.random()*free.length)]; }
+      p.marks[ci]=r.curIdx; if(p.markTs) p.markTs[r.curIdx]=Date.now(); changed=true;
+    }
+    if(changed && (!r._bb || Date.now()-r._bb>2000)){ r._bb=Date.now(); broadcast(code); }
+  }
+}, 1000);
+
 server.listen(PORT, () => console.log('Gyan Shodh Quiz server (The Epilogue) running on port '+PORT));

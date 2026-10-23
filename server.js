@@ -116,11 +116,15 @@ function randCode(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='GYAN'; f
 const rooms = {}; // code -> room object
 
 // ---------- Epilogue: hidden cells, Life Lines, Zone card ----------
-const LIFE_KEYS = ['akshar','madad','change','safety','double'];
+const LIFE_KEYS = ['akshar','madad','change','safety','streak','recharge'];
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
 const ZONE_LINE_PTS=3, ZONE_LINE_MAX=5, ZONE_FULL_PTS=15;
 function zkey(p){ return String(p.zone||'').trim().toLowerCase(); }
+const STREAK_LEN = 3, STREAK_WIN = 10, STREAK_LOSE = -5;
+function streakStarts(p){ return [...((p.lifeOld&&p.lifeOld.streak)||[]), ...(p.lives&&p.lives.streak!=null?[p.lives.streak]:[])]; }
+// the Bonus Streak covers the question it was started on + the next 2 asked questions; returns null while it is not finished
+function streakWindow(room, sq){ const seq = room.usedIdx||[]; const pos = seq.indexOf(sq); if (pos<0 || pos+STREAK_LEN>seq.length) return null; return seq.slice(pos,pos+STREAK_LEN); }
 function markCell(p, qi){ const k = Object.keys(p.marks).find(k=>p.marks[k]===qi); return k===undefined ? undefined : +k; }
 function answerOnCard(room, p, qi){ const q = room.questions[qi]; return !!(q && q.a!==undefined && p.card.includes(q.a)); }
 function makeHidden(){   // 1 gem, 3 stars, 3 bombs on 7 different cells
@@ -173,7 +177,7 @@ function zoneCompute(r, full){
       const q = r.questions[qi]; if (!q || q.a===undefined) continue;
       const act = z.names.filter(n=>first[n]<=pos[qi]).length;       // active AT that question, so a lock never changes later
       let safe=false; const cnt={};
-      for (const n of z.names){ const p=r.players[n]; if(p.lives && p.lives.safety===qi) safe=true; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; } }
+      for (const n of z.names){ const p=r.players[n]; if((p.lives && p.lives.safety===qi) || (p.lifeOld && (p.lifeOld.safety||[]).includes(qi))) safe=true; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; } }
       const need = zoneNeed(r, act, safe); const ts = closeTs(r, qi); let any=false;
       for (const [t,c] of Object.entries(cnt).sort((a,b)=>b[1]-a[1])){
         if (act<=0 || c<need) continue;
@@ -204,16 +208,16 @@ function refreshZoneLocks(r){
 function playerResults(room, pname){
   const p = room.players[pname];
   const cellState = Array(25).fill('none'), pts = Array(25).fill(0), fx = Array(25).fill('');
-  let base=0, hiddenPts=0, ddPts=0, gems=0, stars=0, bombs=0;
+  let base=0, hiddenPts=0, streakPts=0, gems=0, stars=0, bombs=0;
   Object.entries(p.marks).forEach(([ci,qi]) => {
     ci = +ci; const q = room.questions[qi]; const right = !!(q && q.a === p.card[ci]);
     cellState[ci] = right ? 'green' : 'red';
-    const h = (p.hid && p.hid[ci]) || ''; const dd = !!(p.lives && p.lives.double===qi);
+    const h = (p.hid && p.hid[ci]) || ''; 
     let b = right ? 1 : -1, ex = 0;
     if (right){ if (h==='gem'){ ex=GEM_PTS; gems++; } else if (h==='star'){ ex=STAR_PTS; stars++; } }
     else if (h==='bomb'){ ex=BOMB_EXTRA; bombs++; }
-    base += b; hiddenPts += ex; if (dd) ddPts += b;      // double down doubles the +-1 only
-    pts[ci] = b*(dd?2:1) + ex;
+    base += b; hiddenPts += ex;
+    pts[ci] = b + ex;
   });
   (p.hid||[]).forEach((h,ci)=>{ fx[ci]=h; });
   const usedAnswers = room.usedIdx.map(i => room.questions[i].a);
@@ -222,10 +226,12 @@ function playerResults(room, pname){
   const correctCount = cellState.filter(s=>s==='green').length;
   const wrongCount = cellState.filter(s=>s==='red').length;
   const fullHouse = cellState.every(s=>s==='green');
-  const personal = base + hiddenPts + ddPts;
+  let streakOk = null;
+  for (const sq of streakStarts(p)){ const w = streakWindow(room, sq); if (!w) continue; const okAll = w.every(q=>{ const ci=markCell(p,q); return ci!==undefined && p.card[ci]===room.questions[q].a; }); streakPts += okAll ? STREAK_WIN : STREAK_LOSE; streakOk = okAll; }
+  const personal = base + hiddenPts + streakPts;
   const zi = room.zoneInfo && room.zoneInfo[zkey(p)];
   const zoneBonus = zi ? zi.bonus : 0;
-  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, ddPts, gems, stars, bombs, personal, zoneBonus, netScore: personal+zoneBonus };
+  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, gems, stars, bombs, personal, zoneBonus, netScore: personal+zoneBonus };
 }
 function computeAll(r){
   r.zoneInfo = zoneCompute(r, true);
@@ -246,8 +252,8 @@ function computeAll(r){
     for (const p of Object.values(r.players)){ const ci=markCell(p,qi); if(ci===undefined) none++; else if(p.card[ci]===q.a) c++; else w++; }
     return {qi, correct:c, wrong:w, none, pct: Math.round(c*100/Math.max(1,c+w+none))};
   });
-  const LS = {akshar:0,madad:0,change:0,safety:0,double:0};
-  for (const p of Object.values(r.players)) for (const k of LIFE_KEYS) if (p.lives && p.lives[k]!=null) LS[k]++;
+  const LS = {akshar:0,madad:0,change:0,safety:0,streak:0,recharge:0};
+  for (const p of Object.values(r.players)) for (const k of LIFE_KEYS) LS[k] += ((p.lives && p.lives[k]!=null)?1:0) + ((p.lifeOld&&p.lifeOld[k])?p.lifeOld[k].length:0);
   r.lifeStats = LS;
   const HS = {gemHit:0, gemTotal:0, starHit:0, starTotal:0, bombHit:0, bombTotal:0};
   for (const [n,p] of Object.entries(r.players)){ HS.gemTotal++; HS.starTotal+=3; HS.bombTotal+=3; HS.gemHit+=R[n].gems; HS.starHit+=R[n].stars; HS.bombHit+=R[n].bombs; }
@@ -291,8 +297,8 @@ function computeWinners(room){
 function pubPlayer(room, p, own){
   const claims = {};
   for (const [k,c] of Object.entries(p.claims||{})) claims[k] = {ts:(c.shownTs||c.ts), marks:c.marks};
-  const o = {...p, claims}; delete o.hid; delete o._f; delete o._c;
-  if (!own){ delete o._ak; delete o._md; }
+  const o = {...p, claims}; delete o.hid; delete o._c;
+  if (!own){ delete o._ak; delete o._md; delete o._f; }
   return o;
 }
 function publicRoom(room){
@@ -526,7 +532,7 @@ io.on('connection', (socket) => {
       for (const ci of Object.keys(p.marks)) if (p.marks[ci]===idx) delete p.marks[ci];
       if (p.markTs) delete p.markTs[idx];
       if (p.lives) for (const k of LIFE_KEYS) if (p.lives[k]===idx){ delete p.lives[k]; if(k==='change') p.changed=false; }
-      if (p._ak && p._ak.qi===idx) delete p._ak; if (p._md && p._md.qi===idx) delete p._md;
+      if (p._ak && p._ak.qi===idx) delete p._ak; if (p._md && p._md.qi===idx) delete p._md; if (p._f && p._f.qi===idx) delete p._f;
     }
     if (r.qClosedAt) delete r.qClosedAt[idx];
     try{ refreshZoneLocks(r); }catch(e){}
@@ -705,7 +711,7 @@ io.on('connection', (socket) => {
   });
 
   // ---- 5 Life Lines (each once per game; one per question, 🔄 Change Answer is exempt) ----
-  socket.on('player:life', ({code,name,life}, cb) => {
+  socket.on('player:life', ({code,name,life,target}, cb) => {
     seen(code,name);
     const r = rooms[code]; const fail = m => cb && cb({ok:false,error:m});
     if(!r || r.status!=='question' || r.paused) return fail('હમણાં Life Line વાપરી શકાય નહિ.');
@@ -716,6 +722,18 @@ io.on('connection', (socket) => {
     const cur = r.curIdx, q = r.questions[cur];
     if (p.lives[life]!=null) return fail('આ Life Line તમે પહેલેથી વાપરી લીધી છે.');
     if (life!=='change' && LIFE_KEYS.some(k=>k!=='change' && p.lives[k]===cur)) return fail('આ પ્રશ્નમાં એક Life Line વપરાઈ ગઈ છે. એક પ્રશ્નમાં ફક્ત એક (🔄 Change સિવાય).');
+    if (life==='streak'){
+      if ((r.questions.length - (r.usedIdx||[]).length) < STREAK_LEN-1) return fail('Bonus Streak માટે હવે પૂરતા પ્રશ્નો બાકી નથી.');
+      p.lives.streak = cur; touch(socket,code,name); return cb && cb({ok:true});
+    }
+    if (life==='recharge'){
+      const t = target;
+      if (!LIFE_KEYS.includes(t) || t==='recharge' || p.lives[t]==null) return fail('ફરી ચાલુ કરવા માટે વપરાઈ ગયેલી Life Line પસંદ કરો.');
+      if (t==='streak' && !streakWindow(r, p.lives.streak)) return fail('Bonus Streak હજી પૂરી થઈ નથી — પૂરી થયા પછી જ Recharge થાય.');
+      if (!p.lifeOld) p.lifeOld = {}; (p.lifeOld[t] = p.lifeOld[t] || []).push(p.lives[t]);
+      delete p.lives[t]; if (t==='change') p.changed = false;
+      p.lives.recharge = cur; touch(socket,code,name); return cb && cb({ok:true, rc:t});
+    }
     const zk = zkey(p);
     if (life==='change'){
       if (markCell(p,cur)===undefined) return fail('પહેલા એક ખાનું દબાવો, પછી 🔄 Change વાપરો.');
@@ -738,7 +756,6 @@ io.on('connection', (socket) => {
       touch(socket,code,name); return cb && cb({ok:true, md:p._md});
     }
     if (!answerOnCard(r,p,cur)) return fail('આ પ્રશ્નનો જવાબ તમારા Card માં નથી. Life Line વપરાઈ નથી.');
-    if (life==='double'){ p.lives.double = cur; touch(socket,code,name); return cb && cb({ok:true}); }
     if (life==='akshar'){
       const ch = firstAkshar(q.a);
       const cells = []; p.card.forEach((t,i)=>{ if (firstAkshar(t)===ch) cells.push(i); });

@@ -2061,7 +2061,6 @@ async function wcDownload(k){
 async function wcShare(k){
   const b=await wcBlob(k); if(!b){ alert('આ category માં કોઈ Winner નથી.'); return; }
   const f=new File([b],'winner-'+k+'.png',{type:'image/png'});
-  if(navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:'જ્ઞાન શોધ Winner'}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
   wcDownload(k);
 }
 async function wcDownloadAll(){
@@ -2078,7 +2077,6 @@ function tyBlob(n){ return new Promise(res=>{ const d=tyData(n); if(!d) return r
 async function tyShare(n){
   const b=await tyBlob(n); if(!b) return;
   const f=new File([b],'thankyou-'+n.replace(/[^\w઀-૿]+/g,'_')+'.png',{type:'image/png'});
-  if(navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:'ધન્યવાદ'}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 async function tyDownloadAll(){
@@ -2098,7 +2096,7 @@ async function downloadExcel(){
 
     const wonCats = WINNER_ORDER.filter(k=>!/^zone/.test(k)&&w[k]===name).map(k=>WINNER_LABELS[k]);
     return {name, zone:p.zone||'', avatar:p.avatar||'', correct:res.correctCount,
-      wrong:res.cellState.filter(s=>s==='red').length, netScore:res.netScore, personal:res.personal, zoneBonus:res.zoneBonus, gems:res.gems, stars:res.stars, bombs:res.bombs, dd:res.ddPts, life:['akshar','madad','change','safety','double'].filter(k=>(p.lives||{})[k]!=null).map(k=>({akshar:'🔤',madad:'🤝',change:'🔄',safety:'🛡',double:'🎯'}[k])+'Q'+((p.lives[k])+1)).join(' ')||'—', validLines, invalidLines,
+      wrong:res.cellState.filter(s=>s==='red').length, netScore:res.netScore, personal:res.personal, zoneBonus:res.zoneBonus, gems:res.gems, stars:res.stars, bombs:res.bombs, dd:res.streakPts, life:['akshar','madad','change','safety','streak','recharge'].filter(k=>(p.lives||{})[k]!=null).map(k=>({akshar:'🔤',madad:'🤝',change:'🔄',safety:'🛡',streak:'🔥',recharge:'♻️'}[k])+'Q'+((p.lives[k])+1)).join(' ')||'—', validLines, invalidLines,
       fullHouse:res.fullHouse?'Yes':'No', 
       lineWinner: wonCats.length?wonCats.join(', '):'—',
       winTime: wonCats.length?WINNER_ORDER.filter(k=>w[k]===name&&!/^top/.test(k)&&!/^zone/.test(k)).map(k=>WINNER_LABELS[k]+': '+fmtDur(w[k+'_ms'])).join(' | '):'—'};
@@ -2110,7 +2108,7 @@ async function downloadExcel(){
   ws.columns=[
     {header:'Rank',key:'rank',width:7},{header:'Player',key:'name',width:20},{header:'Zone',key:'zone',width:16},
     {header:'Avatar',key:'avatar',width:8},{header:'Correct',key:'correct',width:10},{header:'Wrong',key:'wrong',width:10},
-    {header:'Final Score',key:'netScore',width:11},{header:'Personal',key:'personal',width:10},{header:'🎴 Zone Bonus',key:'zoneBonus',width:12},{header:'💎',key:'gems',width:6},{header:'⭐',key:'stars',width:6},{header:'💣',key:'bombs',width:6},{header:'🎯 Double ±',key:'dd',width:11},{header:'Life Lines (Q#)',key:'life',width:26},
+    {header:'Final Score',key:'netScore',width:11},{header:'Personal',key:'personal',width:10},{header:'🎴 Zone Bonus',key:'zoneBonus',width:12},{header:'💎',key:'gems',width:6},{header:'⭐',key:'stars',width:6},{header:'💣',key:'bombs',width:6},{header:'🔥 Streak ±',key:'dd',width:11},{header:'Life Lines (Q#)',key:'life',width:26},
     {header:'Valid Lines',key:'validLines',width:12},{header:'Invalid Lines',key:'invalidLines',width:13},
     {header:'Full House',key:'fullHouse',width:12},
     {header:'Line Winner',key:'lineWinner',width:22},
@@ -2160,7 +2158,7 @@ async function downloadExcel(){
   ws5.columns=[{header:'Item',key:'k',width:34},{header:'Count',key:'v',width:12},{header:'Out of',key:'o',width:12}];
   ws5.getRow(1).eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'},size:12}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF7C3AED'}}; c.alignment={horizontal:'center'}; });
   { const LS=r.lifeStats||{}, HS=r.hidStats||{}, tp=Object.keys(r.players).length;
-    [['🔤 પહેલો અક્ષર વાપર્યો',LS.akshar,tp],['🤝 Zone Madad વાપર્યું',LS.madad,tp],['🔄 Change Answer વાપર્યું',LS.change,tp],['🛡 Zone Safety Net વાપર્યું',LS.safety,tp],['🎯 Double Down વાપર્યું',LS.double,tp],
+    [['🔤 પહેલો અક્ષર વાપર્યો',LS.akshar,tp],['🤝 Zone Madad વાપર્યું',LS.madad,tp],['🔄 Change Answer વાપર્યું',LS.change,tp],['🛡 Zone Safety Net વાપર્યું',LS.safety,tp],['🔥 Bonus Streak વાપર્યું',LS.streak,tp],['♻️ Recharge વાપર્યું',LS.recharge,tp],
      ['💎 Jackpot મળ્યા (સાચા જવાબ પર)',HS.gemHit,HS.gemTotal],['⭐ Star મળ્યા',HS.starHit,HS.starTotal],['💣 Bomb ફૂટ્યા (ખોટા જવાબ પર)',HS.bombHit,HS.bombTotal]].forEach(x=>ws5.addRow({k:x[0],v:x[1],o:x[2]})); }
 
   // ---------- Summary sheet (static values, ready to show on screen) ----------
@@ -2211,7 +2209,7 @@ async function downloadExcel(){
 }
 // ===== The Epilogue: the server calculates all scores at Reveal; the host only reads r.results =====
 function markCell(p,qi){ const k=Object.keys(p.marks).find(k=>p.marks[k]===qi); return k===undefined?undefined:+k; }
-const EMPTY_RES={cellState:Array(25).fill('none'),pts:Array(25).fill(0),fx:Array(25).fill(''),correctRows:0,correctCount:0,wrongCount:0,fullHouse:false,base:0,hiddenPts:0,ddPts:0,gems:0,stars:0,bombs:0,personal:0,zoneBonus:0,netScore:0};
+const EMPTY_RES={cellState:Array(25).fill('none'),pts:Array(25).fill(0),fx:Array(25).fill(''),correctRows:0,correctCount:0,wrongCount:0,fullHouse:false,base:0,hiddenPts:0,streakPts:0,gems:0,stars:0,bombs:0,personal:0,zoneBonus:0,netScore:0};
 function playerResults(r,pname){ return (r.results&&r.results[pname])||EMPTY_RES; }
 function fmtDur(ms){ if(ms==null) return ''; const t=Math.round(ms/1000), m=Math.floor(t/60), sc=t%60; return (m?m+' મિનિટ ':'')+sc+' સેકન્ડ'; }
 function fmtTime(ts){ if(!ts) return ''; return new Date(ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
@@ -2332,7 +2330,7 @@ function render(){
     ${step>WINNER_ORDER.length?`<button class="btn" style="background:linear-gradient(135deg,#7c3aed,#db2777)" onclick="hostScReveal(${r.scReveal?'false':'true'})">${r.scReveal?'✅ Scratch Card Reveal થયું · 🔒 છુપાવો':'🎁 Scratch Card બધા Players ને Reveal કરો'}</button>`:''}
     <button class="btn secondary" onclick="downloadExcel()">⬇ Excel Report (.xlsx)</button></div>`;
     body+=zoneTableHTML(r);
-    body+=`<div class="card overflow"><h2>Player Results</h2><div class="muted">Final = Personal (સાચા − ખોટા, 🎯 Double, 💎+10 ⭐+3 💣−2) + 🎴 Zone Bonus</div><table class="stbl">
+    body+=`<div class="card overflow"><h2>Player Results</h2><div class="muted">Final = Personal (સાચા − ખોટા, 💎+10 ⭐+3 💣−2) + 🎴 Zone Bonus</div><table class="stbl">
     <tr><th align="left">Player</th><th>✅</th><th>❌</th><th>💎</th><th>⭐</th><th>💣</th><th>Personal</th><th>Zone +</th><th>Final</th><th>Lines</th><th>Full</th></tr>
     ${Object.keys(r.players).map(n=>({n,res:playerResults(r,n)})).sort((a,b)=>b.res.netScore-a.res.netScore).map(({n,res})=>{
     return `<tr><td>${esc(n)}</td><td align="center">${res.correctCount}</td><td align="center">${res.wrongCount}</td><td align="center">${res.gems}</td><td align="center">${res.stars}</td><td align="center">${res.bombs}</td><td align="center">${res.personal}</td><td align="center">+${res.zoneBonus}</td><td align="center" style="color:${res.netScore<0?'#dc2626':'#16a34a'};font-weight:700">${res.netScore}</td><td align="center">${res.correctRows}</td><td align="center">${res.fullHouse?'✔':'—'}</td></tr>`;}).join('')}
@@ -2422,11 +2420,13 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
   return '<div class="pjconf">'+o+'</div>'}
  function btn(a,t,c){return '<button data-act="'+a+'"'+(c?' class="'+c+'"':'')+'>'+t+'</button>'}
  function ctl(r){var st=r.status,b='';
-  if(st==='lobby')b=(r.joinEnd?btn('jtp','＋1 મિનિટ')+btn('jtx','⏹ Timer બંધ','sk'):btn('jt5','⏱ 5:00 Join Timer શરૂ'))+btn('start','▶ Game શરૂ કરો','go');
+  if(st==='lobby')b=['wheel:🎡','ball:🎱','dice:🎲','slot:🎰'].map(function(x){var p=x.split(':');return btn('draw_'+p[0],p[1],((r.draw||'wheel')===p[0])?'go':'sk')}).join('')+(r.joinEnd?btn('jtp','＋1 મિનિટ')+btn('jtx','⏹ Timer બંધ','sk'):btn('jt5','⏱ 5:00 Join Timer શરૂ'))+btn('start','▶ Game શરૂ કરો','go');
   else if(st==='active'||st==='locked')b=btn('spin','🎡 SPIN','go')+(st==='locked'?'':'')+btn('end','🏁 Game પૂરી','sk');
   else if(st==='question')b=(r.paused?btn('resume','▶ Resume','go'):btn('pause','⏸ Pause'))+btn('skip','⏭ Time Skip','sk');
-  else if(st==='ended')b=btn('reveal','🏆 Result Reveal કરો','go');
-  else if(st==='revealed'){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[];b=((r.revealStep||0)<=O.length)?btn('next','⏭ આગળ (Next Winner)','go'):''}
+  else if(st==='ended')b=btn('reveal','🏆 Result Reveal કરો','go')+btn('dash','📊 Dashboard','sk');
+  else if(st==='box'){var lastR=(r.round||0)>=(((r.cfg&&r.cfg.rounds)||7)-1);b=btn('nextround',lastR?'🏁 છેલ્લો Round પૂરો':'➡️ Next Round (નવું Wheel)','go')+btn('end','🏁 Game પૂરી','sk')}
+  else if(st==='opening')b=btn('reveal','🏆 Result Reveal શરૂ કરો','go');
+  else if(st==='revealed'){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[];b=((r.revealStep||0)<=O.length)?btn('next','⏭ આગળ (Next Winner)','go'):'';if((r.revealStep||0)>O.length)b+=btn('dash','📊 Dashboard','go')+btn('sc',r.scReveal?'✅ Scratch Card Reveal થયું · 🔒 છુપાવો':'🎁 Scratch Card Reveal કરો','go')+btn('xls','⬇ Excel','sk')}
   return b?'<div class="pjbar">'+b+'</div>':''}
  function stage(r){var h='';try{if((!wheelLayout||!spinning)&&typeof computeLayout==='function')wheelLayout=computeLayout(r);
    h=(typeof drawStage==='function')?drawStage(r):wheelSVG(wheelLayout,wheelRotation,pendingReveal)}catch(e){h=''}
@@ -2439,7 +2439,10 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
   return (o||tie)?'<div class="pjclaim">'+o+(tie?'<small>⚖️ Tie-break: '+esc2(tie===true?'સૌથી પહેલા Claim':tie)+'</small>':'')+'</div>':''}
  function html(r){var st=r.status;
   if(st==='active'||st==='spinning'||st==='revealing'||st==='locked'){
-   return '<div class="pjh">જ્ઞાન શોધ</div>'+(st==='locked'?'<div class="pjfire" style="background:linear-gradient(90deg,#475569,#1e293b);box-shadow:none;animation:none">⏱ સમય પૂરો — હવે Spin દબાવો</div>':'')+stage(r)+(st==='active'&&!(r.usedIdx||[]).length?'<div class="pjs">Game શરૂ થાય છે…</div>':'')+(st==='revealing'?'<div class="pjs">હવે પ્રશ્ન આવે છે…</div>':'')+bars(r)+ctl(r)}
+   return '<div class="pjh">જ્ઞાન શોધ</div>'+(r.round!=null?'<div class="pjs">ROUND '+((r.round||0)+1)+'</div>':'')+(st==='locked'?'<div class="pjfire" style="background:linear-gradient(90deg,#475569,#1e293b);box-shadow:none;animation:none">⏱ સમય પૂરો — હવે Spin દબાવો</div>':'')+stage(r)+(st==='active'&&!(r.usedIdx||[]).length?'<div class="pjs">Game શરૂ થાય છે…</div>':'')+(st==='revealing'?'<div class="pjs">હવે પ્રશ્ન આવે છે…</div>':'')+bars(r)+ctl(r)}
+  if(st==='box'){var pk=0,tp=Object.keys(r.players||{}),rm=Math.max(0,Math.ceil(((r.boxEnd||0)-Date.now())/1000));tp.forEach(function(n){if(((r.players[n].boxPick||[])[r.round])!=null)pk++});
+   return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjs">ROUND '+((r.round||0)+1)+' પૂરો</div><div class="pjbig">🎁</div><div class="pjs">Mystery Box</div><div class="pjt'+(rm<=10&&!r.boxAuto?' lo':'')+'">'+(r.boxAuto?'⏱':rm+'s')+'</div><div class="pjs">✅ '+pk+' / '+tp.length+' Players એ Box પસંદ કર્યું</div>'+ctl(r)}
+  if(st==='opening')return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjbig">🏁</div><div class="pjs">બધા Round પૂરા</div><div class="pjs">Mystery Box ના Result Players ને દેખાય છે</div>'+ctl(r)
   var h=html0(r);
   if(st==='question'){h=h.replace(/<div class="pjs">પ્રશ્ન \d+[^<]*<\/div>/,r.round!=null?'<div class="pjs">Round '+((r.round||0)+1)+'</div>':'')}
   if(st==='lobby'){h=h.replace('<div class="pjrow">','<div id="pjjw"></div><div class="pjrow">')}
@@ -2477,8 +2480,8 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
   return head+'<div class="pjbig">🎁</div><div class="pjs">'+(r.round!=null?'Round '+((r.round||0)+1)+' · ':'')+'થોભો…</div>'}
  function paint(){paint0();var o=document.getElementById('pj'),r=(typeof state!=='undefined')&&state.room;if(open&&o&&r&&r.status==='lobby'){var w=o.querySelector('#pjjw');if(w)w.innerHTML=jtHTML(r)}}
  function paint0(){if(!open)return;if(typeof spinning!=="undefined"&&spinning)return;var r=(typeof state!=='undefined')&&state.room;var o=document.getElementById('pj');if(!o||!r)return;pvAnnounce(r);sfxTick(r);var h=html(r);var jw=o.querySelector('#pjjw');if(h!==last){last=h;o.querySelector('.pjin').innerHTML=h}}
- function toggle(on){open=(on===undefined)?!open:on;var o=document.getElementById('pj');o.style.display=open?'flex':'none';if(open){last='';paint();try{if(o.requestFullscreen)o.requestFullscreen()}catch(e){}iv=setInterval(paint,500)}else{clearInterval(iv);try{o.querySelector('.pjin').innerHTML='';last=''}catch(e){}try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}}}
- function init(){var o=document.createElement('div');o.id='pj';o.style.display='none';o.innerHTML='<button class="pjx" aria-label="Close">✕</button><button class="pjv" aria-label="Voice">🔊</button><div class="pjin"></div>';o.querySelector('.pjv').onclick=function(){PV.on=!PV.on;this.textContent=PV.on?'🔊':'🔇';try{speechSynthesis.cancel()}catch(e){}};document.body.insertBefore(o,document.body.firstChild);o.querySelector('.pjin').onclick=function(e){var t=e.target.closest&&e.target.closest('[data-act]');if(!t)return;var a=t.getAttribute('data-act'),f={start:'hostStart',spin:'hostSpin',pause:'hostPause',resume:'hostResume',skip:'hostSkipTimer',reveal:'hostReveal',next:'hostNextWinner',end:'hostEnd'}[a];if(a==='jt5'){socket.emit('host:joinTimer',{code:state.code,sec:300});return}if(a==='jtp'){var rr=state.room,rm=Math.max(0,Math.ceil(((rr&&rr.joinEnd||0)-Date.now())/1000));socket.emit('host:joinTimer',{code:state.code,sec:rm+60});return}if(a==='jtx'){socket.emit('host:joinTimer',{code:state.code,sec:0});return}try{if(f&&typeof window[f]==='function')window[f]();else if(f)eval(f+'()')}catch(x){}};o.querySelector('.pjx').onclick=function(){toggle(false)};
+ function toggle(on){open=(on===undefined)?!open:on;var o=document.getElementById('pj');o.style.display=open?'flex':'none';if(open){last='';paint();try{var de=document.documentElement;if(de.requestFullscreen)de.requestFullscreen()}catch(e){}iv=setInterval(paint,500)}else{clearInterval(iv);try{o.querySelector('.pjin').innerHTML='';last=''}catch(e){}try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}}}
+ function init(){var o=document.createElement('div');o.id='pj';o.style.display='none';o.innerHTML='<button class="pjx" aria-label="Close">✕</button><button class="pjv" aria-label="Voice">🔊</button><div class="pjin"></div>';o.querySelector('.pjv').onclick=function(){PV.on=!PV.on;this.textContent=PV.on?'🔊':'🔇';try{speechSynthesis.cancel()}catch(e){}};document.body.insertBefore(o,document.body.firstChild);o.querySelector('.pjin').onclick=function(e){var t=e.target.closest&&e.target.closest('[data-act]');if(!t)return;var a=t.getAttribute('data-act'),f={start:'hostStart',spin:'hostSpin',pause:'hostPause',resume:'hostResume',skip:'hostSkipTimer',reveal:'hostReveal',next:'hostNextWinner',end:'hostEnd',startbox:'hostStartBox',nextround:'hostNextRound',dash:'openDashboard',xls:'downloadExcel'}[a];if(a==='sc'){var r3=state.room;hostScReveal(!(r3&&r3.scReveal));return}if(a&&a.indexOf('draw_')===0){hostSetDraw(a.slice(5));return}if(a==='jt5'){socket.emit('host:joinTimer',{code:state.code,sec:300});return}if(a==='jtp'){var rr=state.room,rm=Math.max(0,Math.ceil(((rr&&rr.joinEnd||0)-Date.now())/1000));socket.emit('host:joinTimer',{code:state.code,sec:rm+60});return}if(a==='jtx'){socket.emit('host:joinTimer',{code:state.code,sec:0});return}try{if(f&&typeof window[f]==='function')window[f]();else if(f)eval(f+'()')}catch(x){}};o.querySelector('.pjx').onclick=function(){toggle(false)};
   var b=document.createElement('button');b.id='hproj';b.type='button';b.setAttribute('aria-label','Projector');b.textContent='📺';b.onclick=function(){toggle(true)};document.body.appendChild(b);
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&open)toggle(false)});document.addEventListener('fullscreenchange',function(){if(open&&!document.fullscreenElement){}})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

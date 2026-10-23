@@ -1,3 +1,16 @@
+## 🎬 Update (Projector full control + Cards)
+- Projector (📺) parthi j start→end: Round pooro / Mystery Box (Beginning), Next Round, Result Reveal, Next Winner, 📊 Dashboard, 🎁 Scratch Card Reveal, ⬇ Excel.
+- Report Card ma 5×5 card (badhi games).
+- Winner/Thank-you card button → seedho download.
+Upload only: server.js, host.html, player.html
+
+## ♻️ Update (Recharge Life Line)
+- Epilogue ma 6th Life Line "♻️ Recharge": vaprai gayeli koi pan ek Life Line (🔤 🤝 🔄 🛡 ✂️) ne pacho chalu kare. Game ma ek vaar; te question ni ek Life Line gani jay. Safety Net no juno fayado jalvay rahe chhe.
+
+## ✂️ Update (Epilogue Life Line)
+- "🎯 Double Down" ni jagya e "✂️ 50-50": use karo to tamara Card ma 2 khana chamke, ek sachu (tamne j dekhay, bija ne nahi). Game ma ek vaar, ane ek question ma ek j Life Line (Change sivay) — niyam pehla jevo.
+- Score ma Double ± have nathi; Excel ma "Double ±" column kadhi.
+
 ## 📺 Update (Projector sequence)
 - Lobby: 5:00 Join Timer (Projector par moto countdown, +1 minute / Timer bandh), pachhi "Game shuru karo".
 - Spin -> Wheel fare -> number -> Question + timer (30/45 sec) -> samay puro thaye Wheel pacho dekhay -> Host SPIN -> repeat.

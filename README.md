@@ -1,3 +1,8 @@
+## 🆕 Epilogue: Premium 🏺 Amrut Kalash
+- Draw methods fakt 🏺 Kalash ane 🎡 Wheel (Ball/Dice/Slot kadhi nakhya)
+- Number have fakt water drop ma dekhay chhe, side ma nahi
+Upload only: server.js, host.html, player.html
+
 ## 🆕 Epilogue: 🏺 Amrut Kalash draw
 - Question number have Amrut Kalash mathi amrut bindu (tipu) tapkine nikle chhe
 - Default draw 🏺; Wheel/Ball/Dice/Slot pan host buttons thi select thai shake

@@ -1,3 +1,7 @@
+## 🆕 Epilogue: Kalash fix
+- Spin dabavta jhuno water drop jatu rahe chhe, nava drop ma navo number aave chhe
+Upload only: server.js, host.html, player.html
+
 ## 🆕 Epilogue: Premium 🏺 Amrut Kalash
 - Draw methods fakt 🏺 Kalash ane 🎡 Wheel (Ball/Dice/Slot kadhi nakhya)
 - Number have fakt water drop ma dekhay chhe, side ma nahi

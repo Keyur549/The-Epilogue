@@ -184,8 +184,8 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 @keyframes kfall{0%{opacity:0;transform:translate(0,0) scale(.6)}15%{opacity:1}100%{opacity:0;transform:translate(-8px,200px) scale(1)}}
 .kal .kglow{position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(251,191,36,.5),transparent 65%);opacity:0;pointer-events:none}.kal.pour .kglow{opacity:1;animation:kgl 1.2s ease-in-out infinite alternate}@keyframes kgl{from{transform:scale(.9)}to{transform:scale(1.12)}}
 .kdrop{position:relative;width:118px;height:153px;margin:8px auto 2px;opacity:0;transform:translateY(-40px) scale(.3);filter:drop-shadow(0 0 18px rgba(56,189,248,.75))}
-.kdrop svg{width:100%;height:100%;display:block}.kdrop b{position:absolute;left:0;right:0;top:56%;text-align:center;font-size:46px;line-height:1;color:#fff;font-weight:900;text-shadow:0 2px 6px #0c4a6e,0 0 3px #0c4a6e}
-.kdrop.show{opacity:1;transform:none;transition:transform .8s cubic-bezier(.2,1.5,.4,1),opacity .4s}
+.kdrop:not(.show) b{opacity:0}.kdrop svg{width:100%;height:100%;display:block}.kdrop b{position:absolute;left:0;right:0;top:56%;text-align:center;font-size:46px;line-height:1;color:#fff;font-weight:900;text-shadow:0 2px 6px #0c4a6e,0 0 3px #0c4a6e}
+.kdrop.out{opacity:0;transform:translateY(70px) scale(.5);transition:transform .5s ease-in,opacity .45s}.kdrop.show{opacity:1;transform:none;transition:transform .8s cubic-bezier(.2,1.5,.4,1),opacity .4s}
 .kcap{font-weight:800;color:var(--pd);margin-top:6px;text-align:center}
 #pj .kal{width:min(40vh,320px);height:min(43vh,345px)}#pj .kdrop{width:min(19vh,150px);height:min(24.7vh,195px)}#pj .kdrop b{font-size:min(8vh,60px)}#pj .kcap{color:#fde68a}
 </style>
@@ -1738,7 +1738,8 @@ function startDraw(r,pos){
       setTimeout(()=>{ clearInterval(iv); if(d1){ d1.classList.remove('roll'); d1.innerHTML=pipHTML(a); } if(d2){ d2.classList.remove('roll'); d2.innerHTML=pipHTML(b); } playFanfare(); setTimeout(finish,1000); },2300);
     } else if(m==='kalash'){
       const kal=$('kal'); if(kal) kal.classList.add('pour');
-      setTimeout(()=>{ const kd=$('kdrop'); if(kd){ const b=kd.querySelector('b'); if(b) b.textContent=num; kd.classList.add('show'); } playFanfare(); setTimeout(finish,1100); },2500);
+      { const k0=$('kdrop'); if(k0){ k0.classList.remove('show'); k0.classList.add('out'); } }
+      setTimeout(()=>{ const kd=$('kdrop'); if(kd){ const b=kd.querySelector('b'); if(b) b.textContent=num; kd.classList.remove('out'); void kd.offsetWidth; kd.classList.add('show'); } playFanfare(); setTimeout(finish,1100); },2500);
     } else {
       const r1=$('r1'), r2=$('r2');
       const i1=setInterval(()=>{ if(r1) r1.textContent=Math.floor(Math.random()*10); },70), i2=setInterval(()=>{ if(r2) r2.textContent=Math.floor(Math.random()*10); },70);

@@ -117,6 +117,10 @@ const rooms = {}; // code -> room object
 
 // ---------- Epilogue: hidden cells, Life Lines, Zone card ----------
 const LIFE_KEYS = ['safety','madad','change','streak','recharge'];
+// 🎁 Mystery Questions (secret until Reveal) and 🗳 Zone Vote questions
+const MYSTERY_N = 3, VOTE_N = 2, VOTE_PTS = 3;
+function pickQs(total, n, avoid){ const a=[]; for(let i=0;i<total;i++) if(!avoid.includes(i)) a.push(i); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a.slice(0,Math.min(n,Math.max(0,a.length-1))); }
+function mystReward(room, name, qi){ let h=7; const t=(room.code||'')+'|'+name+'|'+qi; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; const m=h%10; return m<5?1:(m<8?2:3); }
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
 const ZONE_LINE_PTS=3, ZONE_LINE_MAX=5, ZONE_FULL_PTS=15;
@@ -193,8 +197,17 @@ function zoneCompute(r, full){
       if (cnt2>z.lines){ for (let k=z.lines+1; k<=Math.min(cnt2,ZONE_LINE_MAX); k++) z.lineTs[k-1]=ts; z.lines=cnt2; }
       if (!z.fhTs && z.cell.every(c=>c.st==='ok')) z.fhTs=ts;
     }
+    z.votes=[]; z.voteBonus=0;
+    for (const qi of (r.voteSet||[])){
+      if (!r.usedIdx.includes(qi)) continue; if (!full && !(r.qClosedAt && r.qClosedAt[qi])) continue;
+      const q=r.questions[qi]; if(!q||q.a===undefined) continue;
+      const tl={}; let voters=0; for (const n of z.names){ const ci=inv[n][qi]; if(ci===undefined) continue; const t=r.players[n].card[ci]; tl[t]=(tl[t]||0)+1; voters++; }
+      if (voters<2){ z.votes.push({qi,res:'novote'}); continue; }
+      const arr=Object.entries(tl).sort((a,b)=>b[1]-a[1]); if (arr.length>1 && arr[0][1]===arr[1][1]){ z.votes.push({qi,res:'tie',voters}); continue; }
+      const ok=arr[0][0]===q.a; if(ok) z.voteBonus+=VOTE_PTS; z.votes.push({qi,res:ok?'ok':'bad',ans:arr[0][0],voters,share:Math.round(arr[0][1]*100/voters)});
+    }
     z.lineMs = z.lineTs.map(t=>t?Math.max(0,t-t0):null); z.fhMs = z.fhTs ? Math.max(0,z.fhTs-t0) : null;
-    z.full = !!z.fhTs; z.bonus = ZONE_LINE_PTS*Math.min(z.lines,ZONE_LINE_MAX) + (z.full?ZONE_FULL_PTS:0);
+    z.full = !!z.fhTs; z.bonus = ZONE_LINE_PTS*Math.min(z.lines,ZONE_LINE_MAX) + (z.full?ZONE_FULL_PTS:0) + z.voteBonus;
     z.okCells = z.cell.filter(c=>c.st==='ok').length; z.lockedCells = z.cell.filter(c=>c.st!=='').length;
   }
   return Z;
@@ -229,10 +242,12 @@ function playerResults(room, pname){
   const fullHouse = cellState.every(s=>s==='green');
   let streakOk = null;
   for (const sq of streakStarts(p)){ const w = streakWindow(room, sq); if (!w) continue; const okAll = w.every(q=>{ const ci=markCell(p,q); return ci!==undefined && p.card[ci]===room.questions[q].a; }); streakPts += okAll ? STREAK_WIN : STREAK_LOSE; streakOk = okAll; }
-  const personal = base + hiddenPts + streakPts;
+  let mysteryPts = 0; const mysteryQs = [];
+  for (const qi of (room.mystery||[])){ if(!room.usedIdx.includes(qi)) continue; const ci=markCell(p,qi); if(ci===undefined || room.questions[qi].a!==p.card[ci]) continue; const pt=mystReward(room,pname,qi); mysteryPts+=pt; mysteryQs.push({qi,pts:pt}); }
+  const personal = base + hiddenPts + streakPts + mysteryPts;
   const zi = room.zoneInfo && room.zoneInfo[zkey(p)];
   const zoneBonus = zi ? zi.bonus : 0;
-  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, gems, stars, bombs, personal, zoneBonus, netScore: personal+zoneBonus };
+  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, mysteryPts, mysteryQs, gems, stars, bombs, personal, zoneBonus, netScore: personal+zoneBonus };
 }
 function computeAll(r){
   r.zoneInfo = zoneCompute(r, true);
@@ -315,7 +330,7 @@ function zoneSummary(room){
 }
 function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='question'||room.status==='locked'); for(const p of Object.values(room.players||{})){ const z=String((p&&p.zone)||'').trim(); if(!z) continue; const k=z.toLowerCase(); const o=m[k]||(m[k]={z,i:Object.keys(m).length,n:0,a:0,l:0}); o.n++; if(live&&q!=null&&Object.values(p.marks||{}).includes(q)) o.a++; } if(room.zlock) for(const k in m){ const zl=room.zlock[k]; if(zl&&zl.locks) m[k].l=zl.locks.reduce((s,x)=>s+(x?1:0),0); } return Object.values(m).slice(0,40); }
 function slimBase(room){
-  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, ...rest } = room;
+  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, ...rest } = room;
   const n = Object.keys(players).length;
   if (room.status==='revealed'){
     const keep = {};
@@ -560,8 +575,9 @@ io.on('connection', (socket) => {
     rooms[code] = {
       code, hostName, maxPlayers: maxPlayers||null, status:'lobby',
       questions: parsed.questions, usedIdx:[], curIdx:null, timerEnd:null,
-      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'wheel', zoneCards:{}, qClosedAt:{}
+      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'kalash', zoneCards:{}, qClosedAt:{}
     };
+    rooms[code].mystery = pickQs(parsed.questions.length, MYSTERY_N, []); rooms[code].voteSet = pickQs(parsed.questions.length, VOTE_N, rooms[code].mystery); rooms[code].voteNow = false;
     socket.join(code);
     cb && cb({ok:true, code, parseInfo:{count:parsed.questions.length, bad:parsed.bad, usedDefault:parsed.usedDefault}});
     broadcast(code);
@@ -577,7 +593,7 @@ io.on('connection', (socket) => {
     const avail=[]; for(let i=0;i<r.questions.length;i++) if(!r.usedIdx.includes(i)) avail.push(i);
     if (avail.length===0){ r.status='ended'; broadcast(code); return; }
     const idx = avail[Math.floor(Math.random()*avail.length)];
-    r.status='spinning'; r.curIdx=idx; r.usedIdx=[...r.usedIdx, idx]; r.timerEnd=null; r.paused=false; r.pausedMs=null; r.lastSpinAt=Date.now();
+    r.status='spinning'; r.voteNow=false; r.curIdx=idx; r.usedIdx=[...r.usedIdx, idx]; r.timerEnd=null; r.paused=false; r.pausedMs=null; r.lastSpinAt=Date.now();
     broadcast(code);
     // Safety net only: if the host's own wheel never confirms completion (tab closed, crash, etc.),
     // reveal anyway after a generous timeout so the game never gets permanently stuck.
@@ -591,7 +607,7 @@ io.on('connection', (socket) => {
     r.status='revealing'; broadcast(code);
     setTimeout(()=>{
       const rr=rooms[code]; if(!rr||rr.status!=='revealing'||rr.curIdx!==idx) return;
-      rr.status='question'; rr.timerEnd=Date.now()+(rr.qSec||30)*1000; broadcast(code);
+      rr.status='question'; rr.voteNow=(rr.voteSet||[]).includes(idx); rr.timerEnd=Date.now()+(rr.qSec||30)*1000; broadcast(code);
     }, REVEAL_MS);
   }
   // Host's own wheel tells us exactly when its CSS animation visually finished — no guessing, no drift.
@@ -614,7 +630,7 @@ io.on('connection', (socket) => {
     r.zonePct=pct; r.zoneSafe=safe; broadcast(code);
   });
   socket.on('host:setDraw', ({code, method}) => {
-    const r = rooms[code]; if(!r || !['wheel','ball','dice','slot'].includes(method)) return;
+    const r = rooms[code]; if(!r || !['wheel','ball','dice','slot','kalash'].includes(method)) return;
     r.draw=method; broadcast(code);
   });
 

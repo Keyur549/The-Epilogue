@@ -362,11 +362,15 @@ function markedLines(pname){
 function markCell(p,qi){ const k=Object.keys(p.marks).find(k=>p.marks[k]===qi); return k===undefined?undefined:+k; }
 function answerOnCard(r,p,qi){ const q=r.questions[qi]; return !!(q&&q.a!==undefined&&p.card.includes(q.a)); }
 const EMPTY_RES={cellState:Array(25).fill('none'),pts:Array(25).fill(0),fx:Array(25).fill(''),correctRows:0,correctCount:0,wrongCount:0,fullHouse:false,base:0,hiddenPts:0,streakPts:0,gems:0,stars:0,bombs:0,personal:0,zoneBonus:0,netScore:0};
+function qBanner(r){ const q=(r.questions&&r.questions[r.curIdx])||{}; let h='';
+  if(r.voteNow) h+='<div class="card" style="border:3px solid #7c3aed;text-align:center"><b>🗳 ZONE VOTE!</b><br>તમારા Zone ના <b>બહુમતી જવાબ</b> ને Zone નો જવાબ ગણાશે — સાચો હોય તો Zone ને <b style="color:#16a34a">+3 Bonus</b>. સાથે મળીને નક્કી કરો!</div>';
+  if(q.img) h+='<div class="pmsg">📸 PHOTO ROUND</div>'; if(q.aud) h+='<div class="pmsg">🎵 AUDIO ROUND — નીચે ▶ દબાવો</div>'; return h; }
 function playerResults(pname){ const p=state.room.players[pname]; return (p&&p.res)||EMPTY_RES; }
 const FXI={gem:'💎',star:'⭐',bomb:'💣'};
 function cardTags(r,p,res,qi){
   const L=p.lives||{}, t=[]; const ci=markCell(p,qi);
   if(L.safety===qi) t.push('🛡'); if(L.madad===qi) t.push('🤝'); if(L.change===qi) t.push('🔄'); if(stkIn(r,L,qi)) t.push('🔥'); if(L.recharge===qi) t.push('♻️');
+  const mq=(res.mysteryQs||[]).find(x=>x.qi===qi); if(mq) t.push('🎁+'+mq.pts);
   if(ci!==undefined){ if(res.fx[ci]&&(res.cellState[ci]==='green'||res.fx[ci]==='bomb'&&res.cellState[ci]==='red')) t.push(FXI[res.fx[ci]]); t.push('<b>'+(res.pts[ci]>0?'+':'')+res.pts[ci]+'</b>'); }
   return t.join(' ');
 }
@@ -405,6 +409,7 @@ function zoneCardHTML(r,p){
     if(!notes) notes=`<div class="muted" style="margin-top:6px">હજી Zone Card માં કોઈ Line પૂરી નથી.</div>`;
   } else {
     notes=`<div class="muted" style="margin-top:6px">Line પૂરી થઈ તે સમયે: ${(mz.lockLineTs||[]).map((t,k)=>t?`${k+1}L 🕒${fmtTime(t)}`:'').filter(x=>x).join(' · ')||'—'}</div>`;
+    if(FL.zn>=25&&(mz.votes||[]).length) notes+=`<div class="zsum" style="background:#ede9fe">🗳 Zone Vote: ${(mz.votes||[]).map(v=>'પ્રશ્ન '+(v.qi+1)+': '+(v.res==='ok'?'✅ બહુમતી સાચી ('+v.share+'%) +3':v.res==='bad'?'❌ બહુમતી ખોટી ('+v.share+'%)':v.res==='tie'?'⚖️ બરાબરી':'— પૂરતા મત નહિ')).join(' · ')}</div>`;
     if(FL.zn>=25) notes+=`<div class="zsum">✅ ${mz.okCells} સાચાં · ❌ ${mz.lockedCells-mz.okCells} ખોટાં (લોક) · 📏 ${mz.lines} સાચી Line · ${mz.full?'🏠 Full House!':'Full House નહિ'} → <b>Zone Bonus +${mz.bonus}</b> (દરેક સાચી Line +3, Full House +15)</div>`;
   }
   return h+`<div class="zgrid">${g}</div>${notes}`;
@@ -578,7 +583,7 @@ tr.g td:nth-child(3){color:#15803d;font-weight:600}tr.b td:nth-child(3){color:#b
 @media print{body{background:#fff;padding:0}.pr{display:none}.wrap{box-shadow:none}}</style></head><body><div class="wrap">
 <h1>જ્ઞાન શોધ · The Epilogue</h1><div class="sub">મારો Report Card</div><div class="av">${esc(p.avatar||'🦁')}</div><div class="nm">${esc(nm)}</div>${p.zone?`<div class="zn">Zone: ${esc(p.zone)}</div>`:''}
 <div class="st"><div><b style="color:${res.netScore<0?'#dc2626':'#0f766e'}">${res.netScore}</b><span>🎯 Final Score</span></div><div><b>#${res.rank||'-'}</b><span>🏅 Rank / ${res.of||''}</span></div><div><b style="color:#15803d">${res.correctCount}</b><span>✅ સાચા</span></div><div><b style="color:#dc2626">${res.wrongCount}</b><span>❌ ખોટા</span></div><div><b style="color:#0891b2">${res.gems}</b><span>💎 Jackpot (+10)</span></div><div><b style="color:#b45309">${res.stars}</b><span>⭐ Star (+3)</span></div><div><b style="color:#7f1d1d">${res.bombs}</b><span>💣 Bomb (−2)</span></div><div><b style="color:#7c3aed">+${res.zoneBonus}</b><span>🎴 Zone Bonus</span></div></div>
-<div class="ft">Personal ${res.personal} = (✅${res.correctCount} − ❌${res.wrongCount}) ${res.streakPts?(res.streakPts>0?'+ 🔥 '+res.streakPts:'− 🔥 '+Math.abs(res.streakPts)):''} + 💎/⭐/💣 ${res.hiddenPts>0?'+':''}${res.hiddenPts} · Final = Personal + Zone Bonus ${res.zoneBonus}</div>
+<div class="ft">Personal ${res.personal} = (✅${res.correctCount} − ❌${res.wrongCount}) ${res.mysteryPts?'+ 🎁 '+res.mysteryPts:''} ${res.streakPts?(res.streakPts>0?'+ 🔥 '+res.streakPts:'− 🔥 '+Math.abs(res.streakPts)):''} + 💎/⭐/💣 ${res.hiddenPts>0?'+':''}${res.hiddenPts} · Final = Personal + Zone Bonus ${res.zoneBonus}</div>
 <div class="grid">${cells}</div>${zbox}
 <table><tr><th>#</th><th>Question</th><th>તમારો જવાબ</th><th>સાચો જવાબ</th><th></th><th>Life/Cell/Score</th></tr>${rows}</table>
 <div class="ft" style="margin-top:8px">Life Lines: ${lifeUsed}</div><div class="ft">Claims: ${claims}</div>
@@ -914,11 +919,11 @@ function render(){
   if(p.zone&&(r.zoneCard||r.myZone)){ const zs=zcStat(r,p); body+=`<button class="zbtn" onclick="zcToggle()"><span>🎴 Zone Card — ${esc(p.zone)}</span><span>🔒 ${zs.locked} · 📏 ${zs.lines} Line</span></button>`; }
   if(r.status==='revealed') body+=winnerBannerHTML(r)||`<div class="card muted">Host winners reveal કરવાના શરૂ કરે એની રાહ જુઓ…</div>`;
   if(r.status==='lobby'||r.status==='active') body+=`<div class="card">Host ની રાહ જુઓ…<div style="margin-top:8px"><button class="btn ghost" onclick="pracOpen()">🧪 Practice કરો (3 નકલી પ્રશ્ન)</button></div></div>`;
-  if(r.status==='spinning') body+=`<div class="card"><div class="qtext">🎡 Host Wheel Spin કરી રહ્યા છે...</div></div>`;
-  if(r.status==='revealing') body+=`<div class="card numpop"><div class="lbl">🎯 Question Number</div><div class="num">${r.curIdx+1}</div></div>`;
+  if(r.status==='spinning') body+=`<div class="card"><div class="qtext">${r.draw==='kalash'?'🏺 અમૃત કળશ માંથી અમૃત બિંદુ ટપકી રહ્યું છે…':'🎡 Host Wheel Spin કરી રહ્યા છે...'}</div></div>`;
+  if(r.status==='revealing') body+=`<div class="card numpop"><div class="lbl">${r.draw==='kalash'?'🏺 અમૃત બિંદુ · પ્રશ્ન નંબર':'🎯 Question Number'}</div><div class="num">${r.curIdx+1}</div></div>`;
   if(r.status==='question'){
     const remain=r.paused?Math.ceil((r.pausedMs||0)/1000):Math.max(0,Math.ceil((r.timerEnd-Date.now())/1000));
-    body+=`<div class="card"><div class="qtext">${esc(r.questions[r.curIdx].q)}</div>${r.questions[r.curIdx].img?`<img src="${esc(r.questions[r.curIdx].img)}" style="max-width:100%;max-height:260px;border-radius:12px;margin:8px auto;display:block" onerror="this.style.display='none'">`:''}${qaBtn(r.questions[r.curIdx])}<div class="timer">${remain}s${r.paused?' ⏸':''}</div>${r.paused?'<div class="qtext" style="text-align:center;background:#fff3b0">⏸ Game થોભાવ્યું છે — થોડી રાહ જુઓ</div>':''}
+    body+=qBanner(r)+`<div class="card"><div class="qtext">${esc(r.questions[r.curIdx].q)}</div>${r.questions[r.curIdx].img?`<img src="${esc(r.questions[r.curIdx].img)}" style="max-width:100%;max-height:260px;border-radius:12px;margin:8px auto;display:block" onerror="this.style.display='none'">`:''}${qaBtn(r.questions[r.curIdx])}<div class="timer">${remain}s${r.paused?' ⏸':''}</div>${r.paused?'<div class="qtext" style="text-align:center;background:#fff3b0">⏸ Game થોભાવ્યું છે — થોડી રાહ જુઓ</div>':''}
     <button class="btn secondary" onclick='speakQuestion(${JSON.stringify(r.questions[r.curIdx].q)},true)'>🔊 સાંભળો</button>
     <button class="btn ghost" onclick="toggleAudio()">${audioOn?'🔊 Auto On':'🔇 Auto Off'}</button>
     <div class="muted">તમારા card માં જવાબ શોધીને click કરો.</div></div>`;
@@ -990,6 +995,7 @@ function render(){
         <div class="muted">🏅 Rank #${res.rank} / ${res.of}${res.zoneRank?' · 🎴 તમારો Zone Rank #'+res.zoneRank+'/'+res.zones:''}</div>
         <div class="bk">
           <div><span>✅ ${res.correctCount} સાચા − ❌ ${res.wrongCount} ખોટા</span><b>${res.base>=0?'+':''}${res.base}</b></div>
+          ${res.mysteryPts?`<div><span>🎁 Mystery Question</span><b>+${res.mysteryPts}</b></div>`:''}
           ${res.streakPts?`<div><span>🔥 Bonus Streak</span><b>${res.streakPts>0?'+':''}${res.streakPts}</b></div>`:''}
           <div><span>💎 ${res.gems} · ⭐ ${res.stars} · 💣 ${res.bombs}</span><b>${res.hiddenPts>0?'+':''}${res.hiddenPts}</b></div>
           <div class="sub"><span>Personal Score</span><b>${res.personal}</b></div>

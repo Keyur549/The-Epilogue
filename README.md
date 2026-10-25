@@ -1,3 +1,7 @@
+## 🆕 Epilogue: 3 Mode + Divine Book
+- Mode-1/2/3 (12-12-12), Card 8+8+9, Divine Book 'Swami ni Vato', Projector side panel + timer
+Upload only: server.js, host.html, player.html
+
 ## 🆕 Epilogue: Kalash fix
 - Spin dabavta jhuno water drop jatu rahe chhe, nava drop ma navo number aave chhe
 Upload only: server.js, host.html, player.html

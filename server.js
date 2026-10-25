@@ -82,11 +82,23 @@ const LINES = (() => {
 const WINNER_ORDER = ['line1','line2','line3','line4','line5','full','top3','top2','top1','zonefull','zone'];
 const WINNER_LABELS = {line1:'1 Line',line2:'2 Line',line3:'3 Line',line4:'4 Line',line5:'5 Line',full:'Full House',top3:'3rd Score',top2:'2nd Score',top1:'Overall Champion',zonefull:'Zone Full House',zone:'Zone Champion'};
 
+// Epilogue: 3 modes, 12 questions each. Questions without an explicit mode are split in order: first 12 = Mode 1, next 12 = Mode 2, the rest = Mode 3.
+const MODE_NAMES = {1:'Sudharsan Shield Mode', 2:'Divine Intervention Mode', 3:'Wager with Divine Blessing Mode'};
+const CARD_SPLIT = {1:8, 2:8, 3:9};                       // answers per mode on a 25-answer card
+const HID_SPEC = {1:{star:2}, 2:{star:2,bomb:2}, 3:{gem:1,star:2,bomb:2}};
+function assignModes(qs){
+  const anyM = qs.some(q=>q.m);
+  qs.forEach((q,i)=>{ if(!(q.m>=1&&q.m<=3)) q.m = anyM ? 0 : (i<12?1:(i<24?2:3)); });
+  if (anyM){ let last=1; qs.forEach(q=>{ if(!q.m) q.m=last; else last=q.m; }); }
+}
 function defaultQuestions(){ return DEFAULT_QA.map(([q,a]) => ({q,a})); }
 function parseQA(text){
   const lines = (text||'').split('\n').map(l=>l.trim()).filter(Boolean);
-  const out = [], bad = [];
+  const out = [], bad = []; let curM = 0, explicitM = false;
   for (let l of lines){
+    // mode header line:  "Mode 1" / "Mode-2" / "મોડ 3" / "# Mode 3 ..." (no "::" in it)  => the questions below belong to that mode
+    { const mh = !l.includes('::') && l.match(/^[#=\-\s]*(?:mode|મોડ)\s*[-:]?\s*([123])\b[^]*$/i); if (mh){ curM = +mh[1]; explicitM = true; continue; } }
+    let qm = 0; l = l.replace(/\[(?:m|mode):\s*([123])\s*\]/i, (m,d)=>{ qm=+d; return ''; }).trim();
     // optional picture: put [img:https://...] anywhere in the line
     let img = '';
     l = l.replace(/\[img:\s*(\S+?)\s*\]/i, (m,u)=>{ img=u; return ''; }).trim();
@@ -100,17 +112,26 @@ function parseQA(text){
     if (l.includes('::')) parts = [l.split('::')[0], l.split('::').slice(1).join('::')];
     else if (l.includes(' - ')) parts = [l.split(' - ')[0], l.split(' - ').slice(1).join(' - ')];
     else if ((l.match(/:/g)||[]).length===1) parts = l.split(':');
-    if (parts && parts[0].trim() && parts[1] && parts[1].trim()) { const o={q:parts[0].trim(), a:parts[1].trim()}; if(img) o.img=img; if(aud) o.aud=aud; out.push(o); }
+    if (parts && parts[0].trim() && parts[1] && parts[1].trim()) { const o={q:parts[0].trim(), a:parts[1].trim()}; if(img) o.img=img; if(aud) o.aud=aud; if(qm||curM){ o.m=qm||curM; explicitM=true; } out.push(o); }
     else bad.push(l);
   }
-  return { questions: out.length?out:defaultQuestions(), bad, usedDefault: out.length===0 };
+  const qs = out.length?out:defaultQuestions();
+  assignModes(qs);
+  return { questions: qs, bad, usedDefault: out.length===0 };
 }
 function shuffle(a){ const arr=a.slice(); for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+// 25-answer card: 8 answers from Mode 1's questions + 8 from Mode 2's + 9 from Mode 3's (all different answers), placed on random cells
 function makeCard(questions){
-  let pool = shuffle(questions.map(q=>q.a));
-  while (pool.length < 25) pool = pool.concat(shuffle(questions.map(q=>q.a)));
-  return pool.slice(0,25);
+  const by = {1:[],2:[],3:[]}; const seen = new Set();
+  for (const q of shuffle(questions)){ const m=(q.m>=1&&q.m<=3)?q.m:1; if(seen.has(q.a)) continue; seen.add(q.a); by[m].push(q.a); }
+  let pick = []; const left = [];
+  for (const m of [1,2,3]){ pick = pick.concat(by[m].slice(0,CARD_SPLIT[m])); left.push(...by[m].slice(CARD_SPLIT[m])); }
+  if (pick.length<25) pick = pick.concat(shuffle(left).slice(0,25-pick.length));
+  while (pick.length < 25){ const all = shuffle(questions.map(q=>q.a)); pick = pick.concat(all.slice(0,25-pick.length)); }   // tiny quizzes only
+  return shuffle(pick).slice(0,25);
 }
+function ansModeMap(questions){ const m={}; questions.forEach(q=>{ if(m[q.a]===undefined) m[q.a]=(q.m>=1&&q.m<=3)?q.m:1; }); return m; }
+function cardModes(card, questions){ const m=ansModeMap(questions); return card.map(a=>m[a]||1); }
 function randCode(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='GYAN'; for(let i=0;i<4;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
 
 const rooms = {}; // code -> room object
@@ -129,11 +150,17 @@ const STREAK_LEN = 3, STREAK_WIN = 10, STREAK_LOSE = -5;
 function streakStarts(p){ return [...((p.lifeOld&&p.lifeOld.streak)||[]), ...(p.lives&&p.lives.streak!=null?[p.lives.streak]:[])]; }
 // the Bonus Streak covers the question it was started on + the next 2 asked questions; returns null while it is not finished
 function streakWindow(room, sq){ const seq = room.usedIdx||[]; const pos = seq.indexOf(sq); if (pos<0 || pos+STREAK_LEN>seq.length) return null; return seq.slice(pos,pos+STREAK_LEN); }
+// Mode-3 Recharge: the Player's earlier Mode-2 use of that line is archived and the line becomes usable once more
+function rcTake(p, life){ if (p.lives[life]!=null){ if(!p.lifeOld) p.lifeOld={}; (p.lifeOld[life]=p.lifeOld[life]||[]).push(p.lives[life]); delete p.lives[life]; if(life==='change') p.changed=false; } p.rcOpen=false; }
 function markCell(p, qi){ const k = Object.keys(p.marks).find(k=>p.marks[k]===qi); return k===undefined ? undefined : +k; }
 function answerOnCard(room, p, qi){ const q = room.questions[qi]; return !!(q && q.a!==undefined && p.card.includes(q.a)); }
-function makeHidden(){   // 1 gem, 3 stars, 3 bombs on 7 different cells
-  const idx = shuffle([...Array(25).keys()]); const h = Array(25).fill('');
-  h[idx[0]]='gem'; for(let i=1;i<=3;i++) h[idx[i]]='star'; for(let i=4;i<=6;i++) h[idx[i]]='bomb';
+// hidden cells per mode: Mode 1 = 2 stars; Mode 2 = 2 stars + 2 bombs; Mode 3 = 1 diamond jackpot + 2 stars + 2 bombs
+function makeHidden(card, questions){
+  const h = Array(25).fill(''); const cm = cardModes(card, questions);
+  for (const m of [1,2,3]){
+    const cells = shuffle([...Array(25).keys()].filter(i=>cm[i]===m)); let k=0;
+    for (const [kind,n] of Object.entries(HID_SPEC[m])) for(let i=0;i<n && k<cells.length;i++) h[cells[k++]] = (kind==='gem'?'gem':kind);
+  }
   return h;
 }
 function firstAkshar(s){
@@ -227,9 +254,9 @@ function playerResults(room, pname){
     ci = +ci; const q = room.questions[qi]; const right = !!(q && q.a === p.card[ci]);
     cellState[ci] = right ? 'green' : 'red';
     const h = (p.hid && p.hid[ci]) || ''; 
-    let b = right ? 1 : -1, ex = 0;
+    const qm = (q&&q.m)||1; let b = right ? 1 : (qm===1 ? 0 : -1), ex = 0;
     if (right){ if (h==='gem'){ ex=GEM_PTS; gems++; } else if (h==='star'){ ex=STAR_PTS; stars++; } }
-    else if (h==='bomb'){ ex=BOMB_EXTRA; bombs++; }
+    else if (h==='bomb' && qm!==1){ ex=BOMB_EXTRA; bombs++; }
     base += b; hiddenPts += ex;
     pts[ci] = b + ex;
   });
@@ -266,13 +293,13 @@ function computeAll(r){
   r.qStats = r.usedIdx.map(qi=>{
     const q = r.questions[qi]; let c=0, w=0, none=0;
     for (const p of Object.values(r.players)){ const ci=markCell(p,qi); if(ci===undefined) none++; else if(p.card[ci]===q.a) c++; else w++; }
-    return {qi, correct:c, wrong:w, none, pct: Math.round(c*100/Math.max(1,c+w+none))};
+    return {qi, m:q.m||1, correct:c, wrong:w, none, pct: Math.round(c*100/Math.max(1,c+w+none))};
   });
   const LS = {safety:0,madad:0,change:0,streak:0,recharge:0};
   for (const p of Object.values(r.players)) for (const k of LIFE_KEYS) LS[k] += ((p.lives && p.lives[k]!=null)?1:0) + ((p.lifeOld&&p.lifeOld[k])?p.lifeOld[k].length:0);
   r.lifeStats = LS;
   const HS = {gemHit:0, gemTotal:0, starHit:0, starTotal:0, bombHit:0, bombTotal:0};
-  for (const [n,p] of Object.entries(r.players)){ HS.gemTotal++; HS.starTotal+=3; HS.bombTotal+=3; HS.gemHit+=R[n].gems; HS.starHit+=R[n].stars; HS.bombHit+=R[n].bombs; }
+  for (const [n,p] of Object.entries(r.players)){ HS.gemTotal++; HS.starTotal+=6; HS.bombTotal+=4; HS.gemHit+=R[n].gems; HS.starHit+=R[n].stars; HS.bombHit+=R[n].bombs; }
   r.hidStats = HS;
   r.winners = computeWinners(r);
 }
@@ -321,7 +348,7 @@ function publicRoom(room){
   if (room.status==='revealed') return {...room, cert:undefined};
   const players = {};
   for (const [n,p] of Object.entries(room.players)) players[n] = pubPlayer(room,p,false);
-  return {...room, cert:undefined, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud})), players};
+  return {...room, cert:undefined, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), players};
 }
 // ---- 500-player friendly state: a PLAYER only receives his own data (+ the few winners after the reveal).
 function zoneSummary(room){
@@ -337,7 +364,7 @@ function slimBase(room){
     for (const k of ['line1','line2','line3','line4','line5','full','top1','top2','top3']){ const v=(room.winners||{})[k]; if (typeof v==='string' && players[v]) keep[v]={...players[v], res:results[v]}; }
     return {base:{...rest, nPlayers:n, zoneS:zoneSummary(room)}, keep};
   }
-  return {base:{...rest, nPlayers:n, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud})), zoneProg: zoneProgOf(room)}, keep:{}};
+  return {base:{...rest, nPlayers:n, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), zoneProg: zoneProgOf(room)}, keep:{}};
 }
 function zoneListOf(room){ const seen=[],m={}; for(const p of Object.values(room.players||{})){ const k=String((p&&p.zone)||'').trim().toLowerCase(); if(k&&!(k in m)){ m[k]=seen.length; seen.push(k);} } return m; }
 function slimFor(room, S, name){
@@ -347,7 +374,7 @@ function slimFor(room, S, name){
   if (p){
     const k = zkey(p);
     if (room.status==='revealed'){ players[name] = {...p, res:room.results[name]}; if (k && room.zoneInfo[k]) out.myZone = room.zoneInfo[k]; }
-    else { players[name] = pubPlayer(room, p, true); if (k){ out.zoneCard = ensureZoneCard(room,k); out.zoneLock = (room.zlock && room.zlock[k]) || null; } }
+    else { players[name] = pubPlayer(room, p, true); if (k){ out.zoneCard = ensureZoneCard(room,k); out.zoneCm = cardModes(out.zoneCard, room.questions); out.zoneLock = (room.zlock && room.zlock[k]) || null; } }
   }
   return out;
 }
@@ -413,7 +440,7 @@ function bindSock(socket, r, code, name){
   if (k){ ensureZoneCard(r,k); socket.join(code+'#z:'+k); }
 }
 
-function newPlayerObj(r,name,zone,avatar){ return { card: makeCard(r.questions), hid: makeHidden(), baseName: name, zone, avatar: avatar||'🦁', marks:{}, markTs:{}, lives:{}, claims:{}, joinedAt: Date.now() }; }
+function newPlayerObj(r,name,zone,avatar){ const card=makeCard(r.questions); return { card, cm: cardModes(card,r.questions), hid: makeHidden(card,r.questions), baseName: name, zone, avatar: avatar||'🦁', marks:{}, markTs:{}, lives:{}, claims:{}, joinedAt: Date.now() }; }
 function newToken(){ return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10); }
 function tokFor(r,key){ if(!r.tokens) r.tokens={}; if(!r.tokens[key]) r.tokens[key]=newToken(); return r.tokens[key]; }
 function tokOwner(r,token){ if(!token||!r.tokens) return null; return Object.keys(r.tokens).find(k=>r.tokens[k]===token && r.players[k]) || null; }
@@ -560,7 +587,7 @@ io.on('connection', (socket) => {
     }
     if (r.qClosedAt) delete r.qClosedAt[idx];
     try{ refreshZoneLocks(r); }catch(e){}
-    r.status='active'; r.curIdx=null; r.timerEnd=null; r.paused=false; r.pausedMs=null;
+    r.status='active'; r.curIdx=null; r.timerEnd=null; r.paused=false; r.pausedMs=null; r.modeDone=false;
     cb && cb({ok:true});
     broadcast(code);
   });
@@ -575,7 +602,7 @@ io.on('connection', (socket) => {
     rooms[code] = {
       code, hostName, maxPlayers: maxPlayers||null, status:'lobby',
       questions: parsed.questions, usedIdx:[], curIdx:null, timerEnd:null,
-      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'kalash', zoneCards:{}, qClosedAt:{}
+      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'book', mode:1, modeDone:false, zoneCards:{}, qClosedAt:{}
     };
     rooms[code].mystery = pickQs(parsed.questions.length, MYSTERY_N, []); rooms[code].voteSet = pickQs(parsed.questions.length, VOTE_N, rooms[code].mystery); rooms[code].voteNow = false;
     socket.join(code);
@@ -590,8 +617,14 @@ io.on('connection', (socket) => {
   socket.on('host:spin', ({code}) => {
     const r = rooms[code]; if(!r) return;
     if(r.status!=='active' && r.status!=='locked') return; // ignore duplicate/racing spin clicks — fixes skipped questions
-    const avail=[]; for(let i=0;i<r.questions.length;i++) if(!r.usedIdx.includes(i)) avail.push(i);
-    if (avail.length===0){ r.status='ended'; broadcast(code); return; }
+    if (!r.mode) r.mode=1;
+    if (r.modeDone){ return; }                                   // host must start the next mode first
+    const avail=[]; for(let i=0;i<r.questions.length;i++) if(!r.usedIdx.includes(i) && (r.questions[i].m||1)===r.mode) avail.push(i);
+    if (avail.length===0){
+      const more = [1,2,3].some(m=>m>r.mode && r.questions.some((q,i)=>(q.m||1)===m && !r.usedIdx.includes(i)));
+      if (more){ r.modeDone=true; r.status='locked'; r.timerEnd=null; } else r.status='ended';
+      broadcast(code); return;
+    }
     const idx = avail[Math.floor(Math.random()*avail.length)];
     r.status='spinning'; r.voteNow=false; r.curIdx=idx; r.usedIdx=[...r.usedIdx, idx]; r.timerEnd=null; r.paused=false; r.pausedMs=null; r.lastSpinAt=Date.now();
     broadcast(code);
@@ -619,9 +652,50 @@ io.on('connection', (socket) => {
     sec = Math.round(+sec); if(!(sec>=10 && sec<=60)) return;
     r.qSec = sec; broadcast(code);
   });
+  // Host: shorten (or extend) the RUNNING question's time
+  socket.on('host:adjTimer', ({code, delta}) => {
+    const r = rooms[code]; if(!r || r.status!=='question') return;
+    delta = Math.round(+delta); if(!delta || Math.abs(delta)>60) return;
+    if (r.paused){ r.pausedMs = Math.max(2000, (r.pausedMs||0)+delta*1000); }
+    else if (r.timerEnd){ r.timerEnd = Math.max(Date.now()+2000, r.timerEnd+delta*1000); }
+    broadcast(code);
+  });
   socket.on('host:skipTimer', ({code}) => {
     const r = rooms[code]; if(!r || r.status!=='question') return;
     lockQ(r); r.paused=false; r.pausedMs=null; broadcast(code);
+  });
+  // Epilogue modes: host starts the next mode (or jumps to a chosen one) after a mode is finished
+  socket.on('host:nextMode', ({code, mode}, cb) => {
+    const r = rooms[code]; if(!r) return;
+    if (!['active','locked'].includes(r.status)){ cb&&cb({ok:false,error:'પહેલા ચાલુ Question પૂરો કરો.'}); return; }
+    let m = (+mode>=1 && +mode<=3) ? +mode : (r.mode||1)+1;
+    const has = x => r.questions.some((q,i)=>(q.m||1)===x && !r.usedIdx.includes(i));
+    while (m<=3 && !has(m)) m++;
+    if (m>3){ r.status='ended'; r.modeDone=false; broadcast(code); cb&&cb({ok:true,ended:true}); return; }
+    r.mode=m; r.modeDone=false; r.status='active'; r.modeStartAt=Date.now(); broadcast(code); cb&&cb({ok:true,mode:m});
+  });
+  // add a question by hand (Lobby only: every Player's card is re-made so the new answer can be on it)
+  socket.on('host:addQ', ({code,q,a,m,img,aud}, cb) => {
+    const r = rooms[code]; if(!r){ cb&&cb({ok:false}); return; }
+    if (r.status!=='lobby'){ cb&&cb({ok:false,error:'પ્રશ્ન ફક્ત Game શરૂ થતા પહેલાં (Lobby માં) ઉમેરી શકાય.'}); return; }
+    q=String(q||'').trim().slice(0,600); a=String(a||'').trim().slice(0,120); m=+m;
+    if(!q||!a){ cb&&cb({ok:false,error:'પ્રશ્ન અને જવાબ બંને લખો.'}); return; }
+    if(!(m>=1&&m<=3)) m=1;
+    if (r.questions.filter(x=>(x.m||1)===m).length>=12){ cb&&cb({ok:false,error:'Mode '+m+' માં પહેલેથી 12 પ્રશ્નો છે.'}); return; }
+    const o={q,a,m}; if(img) o.img=String(img).slice(0,300); if(aud) o.aud=String(aud).slice(0,300);
+    r.questions.push(o);
+    r.zoneSet=null; r.zoneCards={};
+    for (const p of Object.values(r.players)){ p.card=makeCard(r.questions); p.cm=cardModes(p.card,r.questions); p.hid=makeHidden(p.card,r.questions); }
+    r.mystery = pickQs(r.questions.length, MYSTERY_N, []); r.voteSet = pickQs(r.questions.length, VOTE_N, r.mystery);
+    broadcast(code); cb&&cb({ok:true, n:r.questions.length});
+  });
+  socket.on('host:delQ', ({code,i}, cb) => {
+    const r = rooms[code]; if(!r){ cb&&cb({ok:false}); return; }
+    if (r.status!=='lobby' || !(i>=0 && i<r.questions.length) || r.questions.length<=5){ cb&&cb({ok:false,error:'હમણાં પ્રશ્ન કાઢી શકાય નહિ.'}); return; }
+    r.questions.splice(+i,1); r.zoneSet=null; r.zoneCards={};
+    for (const p of Object.values(r.players)){ p.card=makeCard(r.questions); p.cm=cardModes(p.card,r.questions); p.hid=makeHidden(p.card,r.questions); }
+    r.mystery = pickQs(r.questions.length, MYSTERY_N, []); r.voteSet = pickQs(r.questions.length, VOTE_N, r.mystery);
+    broadcast(code); cb&&cb({ok:true});
   });
   socket.on('host:setZone', ({code, pct, safe}) => {
     const r = rooms[code]; if(!r || r.status==='revealed') return;
@@ -630,7 +704,7 @@ io.on('connection', (socket) => {
     r.zonePct=pct; r.zoneSafe=safe; broadcast(code);
   });
   socket.on('host:setDraw', ({code, method}) => {
-    const r = rooms[code]; if(!r || !['wheel','ball','dice','slot','kalash'].includes(method)) return;
+    const r = rooms[code]; if(!r || !['wheel','ball','dice','slot','kalash','book'].includes(method)) return;
     r.draw=method; broadcast(code);
   });
 
@@ -744,24 +818,27 @@ io.on('connection', (socket) => {
     const p = r.players[name]; if(!p) return fail('Player મળ્યો નહિ.');
     if(!LIFE_KEYS.includes(life)) return fail('ખોટી Life Line.');
     if(!p.lives) p.lives = {};
-    const cur = r.curIdx, q = r.questions[cur];
-    if (p.lives[life]!=null) return fail('આ Life Line તમે પહેલેથી વાપરી લીધી છે.');
+    const cur = r.curIdx, q = r.questions[cur]; const qm = (q&&q.m)||1;
+    if (qm===1) return fail('🛡 Mode-1 માં કોઈ Life Line નથી.');
+    if (qm===2 && !['madad','change'].includes(life)) return fail('Mode-2 માં ફક્ત 🤝 Zone Madad અને 🔄 Change વાપરી શકાય.');
+    if (qm===3 && ['madad','change'].includes(life)){
+      // Mode-3: Madad / Change only after ♻️ Recharge (one of the two Mode-2 lines, once per Recharge)
+      if (!p.rcOpen) return fail('Mode-3 માં 🤝/🔄 વાપરવા માટે પહેલા ♻️ Recharge વાપરો.');
+    }
+    if (p.lives[life]!=null && !(qm===3 && p.rcOpen && ['madad','change'].includes(life))) return fail('આ Life Line તમે પહેલેથી વાપરી લીધી છે.');
     if (life!=='change' && LIFE_KEYS.some(k=>k!=='change' && p.lives[k]===cur)) return fail('આ પ્રશ્નમાં એક Life Line વપરાઈ ગઈ છે. એક પ્રશ્નમાં ફક્ત એક (🔄 Change સિવાય).');
     if (life==='streak'){
-      if ((r.questions.length - (r.usedIdx||[]).length) < STREAK_LEN-1) return fail('Bonus Streak માટે હવે પૂરતા પ્રશ્નો બાકી નથી.');
+      if (r.questions.filter((x,i)=>(x.m||1)===3 && !(r.usedIdx||[]).includes(i)).length < STREAK_LEN-1) return fail('Bonus Streak માટે હવે પૂરતા પ્રશ્નો બાકી નથી.');
       p.lives.streak = cur; touch(socket,code,name); return cb && cb({ok:true});
     }
     if (life==='recharge'){
-      const t = target;
-      if (!LIFE_KEYS.includes(t) || t==='recharge' || p.lives[t]==null) return fail('ફરી ચાલુ કરવા માટે વપરાઈ ગયેલી Life Line પસંદ કરો.');
-      if (t==='streak' && !streakWindow(r, p.lives.streak)) return fail('Bonus Streak હજી પૂરી થઈ નથી — પૂરી થયા પછી જ Recharge થાય.');
-      if (!p.lifeOld) p.lifeOld = {}; (p.lifeOld[t] = p.lifeOld[t] || []).push(p.lives[t]);
-      delete p.lives[t]; if (t==='change') p.changed = false;
-      p.lives.recharge = cur; touch(socket,code,name); return cb && cb({ok:true, rc:t});
+      if (p.rcOpen) return fail('♻️ Recharge ની એક Life Line હજી વાપરી નથી.');
+      p.lives.recharge = cur; p.rcOpen = true; touch(socket,code,name); return cb && cb({ok:true, rc:'open'});
     }
     const zk = zkey(p);
     if (life==='change'){
       if (markCell(p,cur)===undefined) return fail('પહેલા એક ખાનું દબાવો, પછી 🔄 Change વાપરો.');
+      if (qm===3){ rcTake(p,'change'); }
       p.lives.change = cur; p.changed = false; touch(socket,code,name); return cb && cb({ok:true});
     }
     if (life==='madad'){
@@ -773,6 +850,7 @@ io.on('connection', (socket) => {
       }
       if (tot<ZM_MIN) return fail('તમારા Zone માંથી હજી ફક્ત '+tot+' Players એ જવાબ આપ્યો છે. 🤝 Madad માટે ઓછામાં ઓછા '+ZM_MIN+' જોઈએ. Life Line વપરાઈ નથી, થોડી વાર પછી ફરી પ્રયત્ન કરો.');
       const list = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,c])=>({text:t, pct:Math.round(c*100/tot)}));
+      if (qm===3){ rcTake(p,'madad'); }
       p.lives.madad = cur; p._md = {qi:cur, list, n:tot};
       touch(socket,code,name); return cb && cb({ok:true, md:p._md});
     }

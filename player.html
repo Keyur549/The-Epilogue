@@ -147,6 +147,16 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .pr-cl{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.pr-cl .btn{margin:0;padding:10px 4px;font-size:.8rem}.tip2{background:#fff7dc;color:#4a3a00;border-left:4px solid #f59e0b;border-radius:8px;padding:6px 9px;margin:8px 0;font-size:.82rem;font-weight:600}
 .avpick{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:6px 0 10px}.avp{aspect-ratio:1;border:2px solid var(--line);border-radius:12px;background:var(--card);padding:3px;cursor:pointer;font-size:1.7rem;display:grid;place-items:center}.avp.sel{border-color:var(--p);box-shadow:0 0 0 3px rgba(var(--rg),.3);background:rgba(var(--rg),.1)}
 @media (max-width:420px){.avpick{grid-template-columns:repeat(4,1fr)}}
+.mbn{border-radius:14px;padding:10px 12px;margin:8px 0;color:#fff;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.18);position:relative;overflow:hidden}
+.mbn b{display:block;font-size:1rem}.mbn span{display:block;font-size:.78rem;font-weight:600;opacity:.95;margin-top:2px}
+.mbn.m1{background:linear-gradient(135deg,#0e7490,#2563eb)}.mbn.m2{background:linear-gradient(135deg,#b45309,#d97706)}.mbn.m3{background:linear-gradient(135deg,#6d28d9,#be185d)}
+.mbn .mq{position:absolute;right:10px;top:8px;background:rgba(255,255,255,.22);border-radius:999px;padding:2px 9px;font-size:.74rem}
+.mbrk{text-align:center;border:3px solid #d4a017;background:linear-gradient(180deg,#fff8dc,#ffeaa7);color:#5b3a00}
+.mbrk .big{font-size:2.2rem}
+.cell.cm1{box-shadow:inset 0 -4px 0 #2563eb}.cell.cm2{box-shadow:inset 0 -4px 0 #d97706}.cell.cm3{box-shadow:inset 0 -4px 0 #be185d}
+.zc.cm1{box-shadow:inset 0 -3px 0 #2563eb}.zc.cm2{box-shadow:inset 0 -3px 0 #d97706}.zc.cm3{box-shadow:inset 0 -3px 0 #be185d}
+.mleg{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:.7rem;margin-top:6px;font-weight:700}
+.mleg i{display:inline-block;width:12px;height:5px;border-radius:2px;margin-right:3px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -306,11 +316,23 @@ function uiContinue(){ let s=null; try{ s=JSON.parse(localStorage.getItem('quizS
 
 function playerMark(ci){ socket.emit('player:mark',{code:state.code,name:state.name,ci}); }
 socket.on('zlive', d=>{ state.zl=d; if(state.room&&state.room.status==='question') render(); });
+const MODE_INFO={
+ 1:{ic:'🛡',gu:'સુદર્શન શીલ્ડ મોડ',en:'Sudharsan Shield Mode',rule:'ખોટા જવાબનો ➖ માર્ક નથી · કોઈ Life Line નથી · ⭐ છુપાયેલા'},
+ 2:{ic:'✨',gu:'અવતાર કૃપા મોડ',en:'Divine Intervention Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🤝 Zone Madad, 🔄 Change · ⭐💣 છુપાયેલા'},
+ 3:{ic:'🪙',gu:'દિવ્ય આશીર્વાદ દાવ મોડ',en:'Wager with Divine Blessing Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🔥 Bonus Streak, 🛡 Safety Net, ♻️ Recharge · 💎⭐💣 છુપાયેલા'}};
+function curMode(r){ const q=r.curIdx!=null&&(r.status==='question'||r.status==='locked'||r.status==='revealing'||r.status==='spinning')?r.questions[r.curIdx]:null; return (q&&q.m)||r.mode||1; }
+function modeBannerHTML(r){
+  if(r.status==='lobby'||r.status==='ended'||r.status==='revealed') return '';
+  const m=curMode(r), I=MODE_INFO[m]; const qs=(r.questions||[]); const tot=qs.filter(q=>(q.m||1)===m).length; const done=(r.usedIdx||[]).filter(i=>(qs[i].m||1)===m).length;
+  let h=`<div class="mbn m${m}"><span class="mq">${Math.min(done,tot)}/${tot}</span><b>${I.ic} Mode-${m}: ${I.gu}</b><span>${I.en}</span><span>${I.rule}</span></div>`;
+  if(r.modeDone){ const n=m+1; const N=MODE_INFO[n]; h=`<div class="card mbrk"><div class="big">🎉</div><b>Mode-${m} પૂરો!</b><div style="margin-top:6px">${N?`થોડી વાર રાહ જુઓ… Host હવે <b>Mode-${n}: ${N.gu}</b> શરૂ કરશે.<br><span style="font-size:.8rem">${N.rule}</span>`:'Game પૂરી થવા આવી.'}</div></div>`; }
+  return h;
+}
+function modeLegend(){ return `<div class="mleg"><span style="color:#2563eb"><i style="background:#2563eb"></i>Mode-1</span><span style="color:#d97706"><i style="background:#d97706"></i>Mode-2</span><span style="color:#be185d"><i style="background:#be185d"></i>Mode-3</span></div>`; }
 const LIFE_DEFS=[['safety','🛡','Safety Net'],['madad','🤝','Zone Madad'],['change','🔄','Change'],['streak','🔥','Bonus Streak'],['recharge','♻️','Recharge']];
 function useLife(k,target){
-  if(k==='recharge'&&!target){ state.rcPick=!state.rcPick; render(); return; }
   state.rcPick=false;
-  const MSG={streak:'🔥 Bonus Streak ચાલુ! આ + આગળના 2 પ્રશ્નના જવાબ બધા સાચા તો +10, એક પણ ખોટો/ખાલી તો −5.',recharge:'♻️ Life Line ફરી ચાલુ થઈ ગઈ! હવે આવતા પ્રશ્નથી તે ફરી વાપરી શકશો.',safety:'🛡 Safety Net ચાલુ! આ પ્રશ્ન પર તમારા Zone નું Lock થવાનું Limit ઓછું થયું.',madad:'🤝 તમારા Zone ના સૌથી વધુ જવાબ નીચે દેખાય છે.',change:'🔄 Change ચાલુ: સમય પૂરો થાય એ પહેલાં નવું ખાનું દબાવો (1 વાર).',double:'🎯 Double Down ચાલુ: આ પ્રશ્નનો ±1 બમણો થશે.'};
+  const MSG={streak:'🔥 Bonus Streak ચાલુ! આ + આગળના 2 પ્રશ્નના જવાબ બધા સાચા તો +10, એક પણ ખોટો/ખાલી તો −5.',recharge:'♻️ Recharge ચાલુ! હવે Mode-2 ની 🤝 Zone Madad અથવા 🔄 Change માંથી કોઈ એક (1 વાર) વાપરી શકશો.',safety:'🛡 Safety Net ચાલુ! આ પ્રશ્ન પર તમારા Zone નું Lock થવાનું Limit ઓછું થયું.',madad:'🤝 તમારા Zone ના સૌથી વધુ જવાબ નીચે દેખાય છે.',change:'🔄 Change ચાલુ: સમય પૂરો થાય એ પહેલાં નવું ખાનું દબાવો (1 વાર).',double:'🎯 Double Down ચાલુ: આ પ્રશ્નનો ±1 બમણો થશે.'};
   socket.emit('player:life',{code:state.code,name:state.name,life:k,target:target},(res)=>{
     state.pmsg=(!res||!res.ok)?((res&&res.error)||'Life Line વાપરી શકાઈ નહિ.'):MSG[k];
     clearTimeout(state.pmsgT); state.pmsgT=setTimeout(()=>{ state.pmsg=''; render(); },5000);
@@ -321,18 +343,21 @@ function stkIn(r,L,qi){ if(L.streak==null||qi==null) return false; const seq=r.u
 function lifeHTML(r,p){
   const L=p.lives||{}, cur=r.curIdx, q=(r.status==='question'&&!r.paused), inQ=r.status==='question';
   const usedHere=['safety','madad','streak','recharge'].some(k=>L[k]===cur)&&inQ;
+  const m=curMode(r);
+  if(m===1||r.modeDone||r.status==='lobby'){ return state.pmsg?`<div class="pmsg">${esc(state.pmsg)}</div>`:''; }
+  const allow=m===2?['madad','change']:['safety','streak','recharge'].concat(p.rcOpen?['madad','change']:[]);
   let h=`<div class="pwr">`;
-  LIFE_DEFS.forEach(([k,ic,lb])=>{
-    const used=L[k]!=null, act=(L[k]===cur&&inQ);
+  LIFE_DEFS.filter(d=>allow.includes(d[0])).forEach(([k,ic,lb])=>{
+    const rcFree=(m===3&&p.rcOpen&&(k==='madad'||k==='change'));
+    const used=L[k]!=null&&!rcFree, act=(L[k]===cur&&inQ);
     let dis=!q||used||(k!=='change'&&usedHere);
-    if(k==='change'&&(markCell(p,cur)===undefined||p.changed)) dis=true;
-    if(k==='streak'&&(r.questions.length-(r.usedIdx||[]).length)<2) dis=true;
-    if(k==='recharge'&&!['safety','madad','change','streak'].some(x=>L[x]!=null)) dis=true;
+    if(k==='change'&&(markCell(p,cur)===undefined||p.changed&&!rcFree)) dis=true;
+    if(k==='streak'&&r.questions.filter((x,i)=>(x.m||1)===3&&!(r.usedIdx||[]).includes(i)).length<2) dis=true;
+    if(k==='recharge'&&(p.rcOpen)) dis=true;
     h+=`<button class="${act?'act':(used?'used':'')}" ${dis?'disabled':''} onclick="useLife('${k}')"><b>${ic}</b>${lb}${used&&!act?'<br>વપરાયું':(act?'<br>ચાલુ ✔':'')}</button>`;
   });
   h+=`</div>`;
-  if(inQ&&state.rcPick){ const names={safety:'🛡 Safety Net',madad:'🤝 Zone Madad',change:'🔄 Change',streak:'🔥 Bonus Streak',recharge:'♻️ Recharge'}; const used=Object.keys(names).filter(x=>L[x]!=null);
-    h+=`<div class="cpy">♻️ કઈ વપરાઈ ગયેલી Life Line ફરી ચાલુ કરવી?<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">`+used.map(x=>`<button class="btn" style="padding:8px 10px" onclick="useLife('recharge','${x}')">${names[x]}</button>`).join('')+`</div></div>`; }
+  if(m===3&&p.rcOpen) h+=`<div class="cpy">♻️ Recharge તૈયાર: <b>🤝 Zone Madad</b> અથવા <b>🔄 Change</b> માંથી એક પસંદ કરો (1 વાર).</div>`;
   if(inQ){
     const z=state.zl;
     if(p.zone&&z&&z.qi===cur) h+=z.pct!=null?`<div class="zlive">👥 તમારા Zone ના <b>${z.pct}%</b> Players એ આ પ્રશ્ન સાચો આપ્યો છે <span>(${z.c}/${z.n})</span><div class="zbar"><i style="width:${z.pct}%"></i></div><small>ઓછું % હોય તો 🤝 Madad / 🛡 Safety Net વિચારો</small></div>`:`<div class="zlive">👥 Zone નું live % — ઓછામાં ઓછા 3 active Players જવાબ આપે પછી દેખાશે</div>`;
@@ -395,10 +420,11 @@ function zoneCardHTML(r,p){
   const fl=rev?new Set(zoneOrder(r,mz).slice(0,FL.zn)):null;
   let g='';
   card.forEach((t,i)=>{
-    if(rev){ const c=mz.cell[i]; if(c.st===''){ g+=`<div class="zc">${esc(t)}</div>`; }
-      else if(fl.has(i)) g+=`<div class="zc ${c.st==='ok'?'zok':'zno'}">${esc(t)}<em>${c.st==='ok'?'✅':'❌'} ${c.pct}%</em></div>`;
-      else g+=`<div class="zc zk">${esc(t)}<em class="zl">🔒</em></div>`; }
-    else g+=(zl.locks&&zl.locks[i])?`<div class="zc zk">${esc(t)}<em class="zl">🔒</em></div>`:`<div class="zc">${esc(t)}</div>`;
+    const cmc=' cm'+((r.zoneCm&&r.zoneCm[i])||1);
+    if(rev){ const c=mz.cell[i]; if(c.st===''){ g+=`<div class="zc${cmc}">${esc(t)}</div>`; }
+      else if(fl.has(i)) g+=`<div class="zc ${c.st==='ok'?'zok':'zno'}${cmc}">${esc(t)}<em>${c.st==='ok'?'✅':'❌'} ${c.pct}%</em></div>`;
+      else g+=`<div class="zc zk${cmc}">${esc(t)}<em class="zl">🔒</em></div>`; }
+    else g+=(zl.locks&&zl.locks[i])?`<div class="zc zk${cmc}">${esc(t)}<em class="zl">🔒</em></div>`:`<div class="zc${cmc}">${esc(t)}</div>`;
   });
   const pct=r.zonePct||30;
   let h=`<h2>🎴 Zone Card — ${esc(p.zone)}</h2><div class="muted">Zone ના active Players માંથી ≥${pct}% એ જે જવાબ પસંદ કર્યો તે ખાનું <b>🔒 લોક</b> થઈ જાય (તમારા Card ની જેમ). તે સાચો હતો કે ખોટો, અને Line ની કિંમત — <b>Reveal</b> પર જ ખબર પડે.</div>`;
@@ -583,7 +609,7 @@ tr.g td:nth-child(3){color:#15803d;font-weight:600}tr.b td:nth-child(3){color:#b
 @media print{body{background:#fff;padding:0}.pr{display:none}.wrap{box-shadow:none}}</style></head><body><div class="wrap">
 <h1>જ્ઞાન શોધ · The Epilogue</h1><div class="sub">મારો Report Card</div><div class="av">${esc(p.avatar||'🦁')}</div><div class="nm">${esc(nm)}</div>${p.zone?`<div class="zn">Zone: ${esc(p.zone)}</div>`:''}
 <div class="st"><div><b style="color:${res.netScore<0?'#dc2626':'#0f766e'}">${res.netScore}</b><span>🎯 Final Score</span></div><div><b>#${res.rank||'-'}</b><span>🏅 Rank / ${res.of||''}</span></div><div><b style="color:#15803d">${res.correctCount}</b><span>✅ સાચા</span></div><div><b style="color:#dc2626">${res.wrongCount}</b><span>❌ ખોટા</span></div><div><b style="color:#0891b2">${res.gems}</b><span>💎 Jackpot (+10)</span></div><div><b style="color:#b45309">${res.stars}</b><span>⭐ Star (+3)</span></div><div><b style="color:#7f1d1d">${res.bombs}</b><span>💣 Bomb (−2)</span></div><div><b style="color:#7c3aed">+${res.zoneBonus}</b><span>🎴 Zone Bonus</span></div></div>
-<div class="ft">Personal ${res.personal} = (✅${res.correctCount} − ❌${res.wrongCount}) ${res.mysteryPts?'+ 🎁 '+res.mysteryPts:''} ${res.streakPts?(res.streakPts>0?'+ 🔥 '+res.streakPts:'− 🔥 '+Math.abs(res.streakPts)):''} + 💎/⭐/💣 ${res.hiddenPts>0?'+':''}${res.hiddenPts} · Final = Personal + Zone Bonus ${res.zoneBonus}</div>
+<div class="ft">Personal ${res.personal} = (✅${res.correctCount} − ❌${res.correctCount-res.base}) ${res.mysteryPts?'+ 🎁 '+res.mysteryPts:''} ${res.streakPts?(res.streakPts>0?'+ 🔥 '+res.streakPts:'− 🔥 '+Math.abs(res.streakPts)):''} + 💎/⭐/💣 ${res.hiddenPts>0?'+':''}${res.hiddenPts} · Final = Personal + Zone Bonus ${res.zoneBonus}</div>
 <div class="grid">${cells}</div>${zbox}
 <table><tr><th>#</th><th>Question</th><th>તમારો જવાબ</th><th>સાચો જવાબ</th><th></th><th>Life/Cell/Score</th></tr>${rows}</table>
 <div class="ft" style="margin-top:8px">Life Lines: ${lifeUsed}</div><div class="ft">Claims: ${claims}</div>
@@ -867,7 +893,7 @@ function zoneBattleHTML(r,p){
 function avPick(e){ const sl=document.getElementById('joinAvatar'); if(sl) sl.value=e; document.querySelectorAll('.avp').forEach(b=>b.classList.toggle('sel',b.dataset.e===e)); }
 
 /* ===== 🧪 Practice Round (offline, no points) ===== */
-const PRAC_NOTE='<div class="tip2">🛟 ખરી Game માં 5 Life Line, 🎴 Zone Card અને 💎⭐💣 છુપાયેલાં ખાનાં હશે — બધું Reveal સુધી છુપું.</div>';
+const PRAC_NOTE='<div class="tip2">🛟 ખરી Game માં 3 Mode (🛡 સુદર્શન શીલ્ડ · ✨ અવતાર કૃપા · 🪙 દિવ્ય આશીર્વાદ દાવ), દરેક Mode ની Life Lines, 🎴 Zone Card અને 💎⭐💣 છુપાયેલાં ખાનાં હશે — બધું Reveal સુધી છુપું.</div>';
 let PR=null;
 function pracOpen(){
   const Q=[['ગુજરાતની રાજધાની કઈ?','ગાંધીનગર'],['ગુજરાતનું રાજ્ય પક્ષી કયું?','મોર'],['ગીર કયા પ્રાણી માટે પ્રખ્યાત છે?','સિંહ'],['ગુજરાતનો પ્રખ્યાત નવરાત્રિ નૃત્ય કયો?','ગરબા'],['ઉત્તરાયણ પર આકાશમાં શું ઉડાવાય?','પતંગ']];
@@ -915,12 +941,12 @@ function render(){
   if(!state.room){ el.innerHTML='<div class="card">Loading…</div>'; return; }
   const r=state.room, p=r.players[state.name];
   if(!p){ el.innerHTML='<div class="card">Card તૈયાર થઈ રહ્યું છે… (થોડી સેકન્ડ, આપોઆપ ફરી જોડાઈ રહ્યા છીએ)</div>'; autoRejoin(); return; }
-  let body=profileHdr(r,p)+zoneBattleHTML(r,p)+(typeof certBtn==='function'?certBtn(r):'');
+  let body=profileHdr(r,p)+modeBannerHTML(r)+zoneBattleHTML(r,p)+(typeof certBtn==='function'?certBtn(r):'');
   if(p.zone&&(r.zoneCard||r.myZone)){ const zs=zcStat(r,p); body+=`<button class="zbtn" onclick="zcToggle()"><span>🎴 Zone Card — ${esc(p.zone)}</span><span>🔒 ${zs.locked} · 📏 ${zs.lines} Line</span></button>`; }
   if(r.status==='revealed') body+=winnerBannerHTML(r)||`<div class="card muted">Host winners reveal કરવાના શરૂ કરે એની રાહ જુઓ…</div>`;
-  if(r.status==='lobby'||r.status==='active') body+=`<div class="card">Host ની રાહ જુઓ…<div style="margin-top:8px"><button class="btn ghost" onclick="pracOpen()">🧪 Practice કરો (3 નકલી પ્રશ્ન)</button></div></div>`;
-  if(r.status==='spinning') body+=`<div class="card"><div class="qtext">${r.draw==='kalash'?'🏺 અમૃત કળશ માંથી અમૃત બિંદુ ટપકી રહ્યું છે…':'🎡 Host Wheel Spin કરી રહ્યા છે...'}</div></div>`;
-  if(r.status==='revealing') body+=`<div class="card numpop"><div class="lbl">${r.draw==='kalash'?'🏺 અમૃત બિંદુ · પ્રશ્ન નંબર':'🎯 Question Number'}</div><div class="num">${r.curIdx+1}</div></div>`;
+  if((r.status==='lobby'||r.status==='active')&&!r.modeDone) body+=`<div class="card">Host ની રાહ જુઓ…<div style="margin-top:8px"><button class="btn ghost" onclick="pracOpen()">🧪 Practice કરો (3 નકલી પ્રશ્ન)</button></div></div>`;
+  if(r.status==='spinning') body+=`<div class="card"><div class="qtext">${r.draw!=='wheel'?'📖 સ્વામીની વાતો માંથી પ્રકાશ રૂપે વાત પ્રગટ થઈ રહી છે…':'🎡 Host Wheel Spin કરી રહ્યા છે...'}</div></div>`;
+  if(r.status==='revealing') body+=`<div class="card numpop"><div class="lbl">${r.draw!=='wheel'?'📖 સ્વામીની વાત · પ્રશ્ન નંબર':'🎯 Question Number'}</div><div class="num">${r.curIdx+1}</div></div>`;
   if(r.status==='question'){
     const remain=r.paused?Math.ceil((r.pausedMs||0)/1000):Math.max(0,Math.ceil((r.timerEnd-Date.now())/1000));
     body+=qBanner(r)+`<div class="card"><div class="qtext">${esc(r.questions[r.curIdx].q)}</div>${r.questions[r.curIdx].img?`<img src="${esc(r.questions[r.curIdx].img)}" style="max-width:100%;max-height:260px;border-radius:12px;margin:8px auto;display:block" onerror="this.style.display='none'">`:''}${qaBtn(r.questions[r.curIdx])}<div class="timer">${remain}s${r.paused?' ⏸':''}</div>${r.paused?'<div class="qtext" style="text-align:center;background:#fff3b0">⏸ Game થોભાવ્યું છે — થોડી રાહ જુઓ</div>':''}
@@ -928,7 +954,7 @@ function render(){
     <button class="btn ghost" onclick="toggleAudio()">${audioOn?'🔊 Auto On':'🔇 Auto Off'}</button>
     <div class="muted">તમારા card માં જવાબ શોધીને click કરો.</div></div>`;
   }
-  if(['question','locked','spinning','revealing','active'].includes(r.status)) body+=`<div class="card">${lifeHTML(r,p)}</div>`;
+  if(['question','locked','spinning','revealing','active'].includes(r.status)) { const lh=lifeHTML(r,p); if(lh) body+=`<div class="card">${lh}</div>`; }
   if(r.status==='locked') body+=`<div class="card muted">⏱ સમય પૂરો — next question ની રાહ જુઓ.</div>`;
   if(r.status==='ended') body+=`<div class="card muted">Game પૂરી — results ની રાહ જુઓ.</div>`;
 
@@ -942,7 +968,7 @@ function render(){
   const L=p.lives||{}; const inQ=r.status==='question';
   body+=`<div class="card"><div class="grid">`;
   for(let i=0;i<25;i++){
-    let cls='cell'+(LT[i]?' inline':'');
+    let cls='cell cm'+((p.cm&&p.cm[i])||1)+(LT[i]?' inline':'');
     let hintOn=false;
     if(inQ&&p._md&&p._md.qi===r.curIdx&&p._md.list.some(x=>x.text===p.card[i])) hintOn=true;
     if(hintOn) cls+=' hint';
@@ -957,7 +983,7 @@ function render(){
     const ltag=LT[i]?`<span class="ln">${LT[i].map(n=>'L'+n).join('·')}</span>`:'';
     body+=`<div class="${cls}" onclick="playerMark(${i})">${badge}${ltag}${extra}${esc(p.card[i])}</div>`;
   }
-  body+=`</div>${rev?'':'<div class="muted" style="text-align:center">🔒 જવાબ સાચો છે કે ખોટો, અને 💎⭐💣 છુપાયેલાં ખાનાં — બધું <b>Reveal</b> પર જ ખૂલશે.</div>'}</div>`;
+  body+=`</div>${modeLegend()}${rev?'':'<div class="muted" style="text-align:center">🔒 જવાબ સાચો છે કે ખોટો, અને 💎⭐💣 છુપાયેલાં ખાનાં — બધું <b>Reveal</b> પર જ ખૂલશે.</div>'}</div>`;
   if(!rev){
     const lines=markedLines(state.name);
     const opts=[['line1','1 Line',1],['line2','2 Line',2],['line3','3 Line',3],['line4','4 Line',4],['line5','5 Line',5],['full','Full House',5]];

@@ -213,7 +213,10 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .bkshadow{position:absolute;left:50%;bottom:-.3em;width:12em;height:1.2em;margin-left:-6em;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.5),transparent 70%)}
 .bkpg{position:absolute;inset:.25em .1em .25em .35em;border-radius:.1em .5em .5em .1em;background:linear-gradient(90deg,#e8d9ae,#fff8e1 12%,#fbeec6);box-shadow:inset .2em 0 .5em rgba(120,80,20,.3),.12em .12em 0 #e3cf9b,.24em .24em 0 #d4bd84,.36em .36em 0 #c3aa6c}
 .bkpg.p2{transform:translateZ(.05em)}.bkpg.p3{transform:translateZ(.1em)}.bkpg.txt{transform:translateZ(.15em)}
-.bkpg.txt{background:repeating-linear-gradient(180deg,transparent 0 .78em,rgba(120,70,20,.28) .78em .84em) 1.1em 1.6em/6.6em 8.6em no-repeat,linear-gradient(90deg,#e8d9ae,#fff8e1 12%,#fbeec6)}
+.bkpg.txt{background:linear-gradient(90deg,#e8d9ae,#fff8e1 12%,#fbeec6)}
+.bkpg.txt:before{content:"";position:absolute;inset:0;border-radius:inherit;background:repeating-linear-gradient(180deg,transparent 0 .78em,rgba(120,70,20,.3) .78em .84em) 1.1em 1.6em/5.8em 8.8em no-repeat;opacity:0;filter:blur(.35em);transition:opacity 1.8s ease-out 1.3s,filter 1.8s ease-out 1.3s}
+.bk.flip .bkpg.txt:before,.bk.done .bkpg.txt:before{opacity:1;filter:blur(0)}
+.bk.done .bkpg.txt:before{transition:none}
 .bkflip{transform:translateZ(.2em);position:absolute;inset:.25em .1em .25em .35em;transform-origin:left center;border-radius:.1em .5em .5em .1em;background:linear-gradient(90deg,#f1e2b4,#fff8e1);opacity:0;backface-visibility:visible}
 .bk.flip .bkflip{animation:bkfl .8s ease-in-out 2 both}.bk.flip .bkflip.f2{animation-delay:.3s}.bk.flip .bkflip.f3{animation-delay:.6s}
 @keyframes bkfl{0%{opacity:.95;transform:translateZ(.2em) rotateY(0)}80%{opacity:.9;transform:translateZ(.2em) rotateY(-165deg)}100%{opacity:0;transform:translateZ(.2em) rotateY(-175deg)}}
@@ -228,13 +231,13 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .bkspark{position:absolute;left:50%;bottom:7em;width:0;height:0;opacity:0}.bk.beam .bkspark,.bk.done .bkspark{opacity:1}
 .bkspark s{position:absolute;left:var(--x);bottom:0;width:.32em;height:.32em;border-radius:50%;background:#fff6c4;box-shadow:0 0 .6em .2em rgba(253,224,71,.9);opacity:0;animation:bkup var(--t) ease-out var(--dl) infinite}
 @keyframes bkup{0%{opacity:0;transform:translateY(0) scale(.5)}20%{opacity:1}100%{opacity:0;transform:translateY(-10em) scale(1.1)}}
-.bkorb{position:absolute;left:50%;bottom:6em;width:8em;height:8em;margin-left:-4em;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(3em) scale(.4);
+.bkorb{position:absolute;left:50%;bottom:6em;width:8em;height:8em;margin-left:-4em;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;filter:blur(1.2em);
  background:radial-gradient(circle at 38% 32%,#fffdf0,#fff1a8 35%,#fbbf24 70%,#d97706);box-shadow:0 0 1.2em .5em rgba(253,224,71,.95),0 0 4em 1.4em rgba(251,191,36,.6),inset 0 0 1em rgba(255,255,255,.9);z-index:6}
-.bkorb b{font-size:3.4em;line-height:1;font-weight:900;color:#5b2200;text-shadow:0 .03em .06em rgba(255,255,255,.9),0 0 .3em rgba(255,255,255,.8);font-family:'Hind Vadodara',system-ui,sans-serif}
-.bkorb.show{opacity:1;transform:translateY(-.5em) scale(1);transition:transform 1.1s cubic-bezier(.2,1.4,.4,1),opacity .5s}
+.bkorb b{font-size:3.4em;transition:none;line-height:1;font-weight:900;color:#5b2200;text-shadow:0 .03em .06em rgba(255,255,255,.9),0 0 .3em rgba(255,255,255,.8);font-family:'Hind Vadodara',system-ui,sans-serif}
+.bkorb.show{opacity:1;filter:blur(0);transition:opacity 1.3s ease-out,filter 1.3s ease-out}
 @keyframes bkorb{from{transform:translateY(-.5em) scale(1)}to{transform:translateY(-1em) scale(1.05)}}
 .bk.burst:after{content:"";position:absolute;left:50%;bottom:10em;width:2em;height:2em;margin:0 0 0 -1em;border-radius:50%;background:#fff;box-shadow:0 0 3em 3em #fff6c4;opacity:0;animation:bkburst 1s ease-out}
-@keyframes bkburst{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(6)}}
+@keyframes bkburst{0%{opacity:.8}100%{opacity:0}}
 .bkcap{font-weight:800;color:var(--pd);margin-top:6px;text-align:center}
 #pj .bk{font-size:min(3vh,28px)}#pj .bkcap{color:#fde68a}
 </style>
@@ -1695,6 +1698,20 @@ function playTick(){
     o.start(); o.stop(tickAudioCtx.currentTime+.06);
   }catch(e){}
 }
+// 📖 real-paper sounds (synthesised: filtered noise) — page flip rustle, cover thud, soft shimmer
+function bookSnd(kind,delayMs){
+  setTimeout(()=>{ try{
+    if(!tickAudioCtx) tickAudioCtx=new (window.AudioContext||window.webkitAudioContext)(); const c=tickAudioCtx, t=c.currentTime;
+    if(kind==='thud'){ const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(48,t+.25); g.gain.setValueAtTime(.35,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+.32); return; }
+    if(kind==='shimmer'){ [1318.5,1568,2093,2637].forEach((f,i)=>{ const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0,t+i*.07); g.gain.linearRampToValueAtTime(.05,t+i*.07+.08); g.gain.exponentialRampToValueAtTime(.001,t+i*.07+.9); o.connect(g); g.connect(c.destination); o.start(t+i*.07); o.stop(t+i*.07+1); }); return; }
+    // page flip: a swish of paper — band-passed noise, frequency sweeps up then a soft flap at the end
+    const len=.5, n=Math.floor(c.sampleRate*len), buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<n;i++){ const e=Math.sin(Math.PI*Math.min(1,i/n))*(1-i/n*.35); d[i]=(Math.random()*2-1)*e*(i>n*.86?1.6:1); }
+    const src=c.createBufferSource(); src.buffer=buf; const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=.9; bp.frequency.setValueAtTime(900,t); bp.frequency.exponentialRampToValueAtTime(4200,t+len*.8);
+    const g=c.createGain(); g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(.55,t+.08); g.gain.exponentialRampToValueAtTime(.001,t+len);
+    src.connect(bp); bp.connect(g); g.connect(c.destination); src.start(t);
+  }catch(e){} }, delayMs);
+}
 function playSpinTicks(durationMs){
   const totalTicks=34;
   function schedule(i){
@@ -1782,7 +1799,7 @@ function drawStage(r){
 function startDraw(r,pos){
   const m=effMethod(r), idx=r.curIdx, num=idx+1;
   if(m==='wheel') return animateSpinTo(pos<0?0:pos, wheelLayout.length, idx);
-  spinning=true; playSpinTicks(2600); render();
+  spinning=true; if(m!=='book') playSpinTicks(2600); render();
   const finish=()=>{ spinning=false; render(); socket.emit('host:spinComplete',{code:state.code, idx}); };
   const $=id=>document.getElementById(id);
   requestAnimationFrame(()=>{
@@ -1796,6 +1813,7 @@ function startDraw(r,pos){
       setTimeout(()=>{ clearInterval(iv); if(d1){ d1.classList.remove('roll'); d1.innerHTML=pipHTML(a); } if(d2){ d2.classList.remove('roll'); d2.innerHTML=pipHTML(b); } playFanfare(); setTimeout(finish,1000); },2300);
     } else if(m==='book'){
       const bk=$('bk'); const get=()=>$('bk');
+      bookSnd('thud',300); [0,300,600,800,1100,1400].forEach(o=>bookSnd('flip',1550+o)); bookSnd('shimmer',4250);
       setTimeout(()=>{ const b=get(); if(b) b.classList.add('open'); },250);
       setTimeout(()=>{ const b=get(); if(b) b.classList.add('flip'); },1450);
       setTimeout(()=>{ const b=get(); if(b) b.classList.add('beam'); },3500);

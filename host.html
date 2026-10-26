@@ -215,7 +215,7 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .bkpg.p2{transform:translateZ(.05em)}.bkpg.p3{transform:translateZ(.1em)}.bkpg.txt{transform:translateZ(.15em)}
 .bkpg.txt{background:linear-gradient(90deg,#e8d9ae,#fff8e1 12%,#fbeec6)}
 .bkpg.txt:before{content:"";position:absolute;inset:0;border-radius:inherit;background:repeating-linear-gradient(180deg,transparent 0 .78em,rgba(120,70,20,.3) .78em .84em) 1.1em 1.6em/5.8em 8.8em no-repeat;opacity:0;filter:blur(.35em);transition:opacity 1.8s ease-out 1.3s,filter 1.8s ease-out 1.3s}
-.bk.flip .bkpg.txt:before,.bk.done .bkpg.txt:before{opacity:1;filter:blur(0)}
+.bk.flip .bkpg.txt:before,.bk.done .bkpg.txt:before{opacity:.28;filter:blur(0)}
 .bk.done .bkpg.txt:before{transition:none}
 .bkflip{transform:translateZ(.2em);position:absolute;inset:.25em .1em .25em .35em;transform-origin:left center;border-radius:.1em .5em .5em .1em;background:linear-gradient(90deg,#f1e2b4,#fff8e1);opacity:0;backface-visibility:visible}
 .bk.flip .bkflip{animation:bkfl .8s ease-in-out 2 both}.bk.flip .bkflip.f2{animation-delay:.3s}.bk.flip .bkflip.f3{animation-delay:.6s}
@@ -239,6 +239,19 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .bk.burst:after{content:"";position:absolute;left:50%;bottom:10em;width:2em;height:2em;margin:0 0 0 -1em;border-radius:50%;background:#fff;box-shadow:0 0 3em 3em #fff6c4;opacity:0;animation:bkburst 1s ease-out}
 @keyframes bkburst{0%{opacity:.8}100%{opacity:0}}
 .bkcap{font-weight:800;color:var(--pd);margin-top:6px;text-align:center}
+
+/* number is WRITTEN on the book page; continuous glitter around the book */
+.bk .bkspark{position:absolute;inset:0;width:auto;height:auto;opacity:1;pointer-events:none}
+.bk .bkspark s{position:absolute;width:.3em;height:.3em;border-radius:50%;background:#fff6c4;box-shadow:0 0 .5em .15em rgba(253,224,71,.85);opacity:0;animation:bktw var(--t) ease-in-out var(--dl) infinite}
+.bk .bkspark s.st{width:.7em;height:.7em;border-radius:0;background:#fff;box-shadow:none;filter:drop-shadow(0 0 .25em #fde047);clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%)}
+@keyframes bktw{0%,100%{opacity:0;transform:translateY(0) scale(.4)}45%{opacity:1;transform:translateY(-.6em) scale(1)}}
+.bkrays,.bkbeam,.bkorb{display:none!important}
+.bk.open .bkglow{opacity:.7}
+.bknum{position:absolute;left:.7em;right:.25em;top:3.1em;transform:translateZ(.3em);text-align:center;opacity:0;filter:blur(.5em);transition:opacity 1.5s ease-out,filter 1.5s ease-out;pointer-events:none}
+.bknum small{display:block;font-size:.62em;font-weight:800;letter-spacing:.05em;color:#8a5a12}
+.bknum b{display:block;font-size:4.6em;line-height:1.05;font-weight:800;font-family:'Hind Vadodara','Noto Serif Gujarati',Georgia,serif;background:linear-gradient(180deg,#a8630b,#6e1010 60%,#4a0a0a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .02em 0 rgba(255,236,170,.9)) drop-shadow(0 0 .25em rgba(212,160,23,.55))}
+.bknum.show{opacity:1;filter:blur(0)}
+.bk.done .bknum{transition:none}
 #pj .bk{font-size:min(3vh,28px)}#pj .bkcap{color:#fde68a}
 </style>
 </head>
@@ -1770,14 +1783,15 @@ function animateSpinTo(pos,total,idx){
 // ===== Random draw: Wheel / Ball / Dice / Slot (the server picks the question; these are only the show) =====
 function effMethod(r){ return (r.draw||'book')==='wheel'?'wheel':'book'; }
 function bookHTML(spin,num){
-  const sp=[...Array(14)].map((_,i)=>`<s style="--x:${(i*53)%100-50}%;--t:${1.8+(i%5)*.4}s;--dl:${(i%7)*.25}s"></s>`).join('');
+  const sp=[...Array(26)].map((_,i)=>{ const a=i*137.5*Math.PI/180, rx=7.5+(i%5)*.9, ry=7+(i%4)*1.1; const x=Math.round(50+Math.cos(a)*rx*5.2), y=Math.round(46+Math.sin(a)*ry*4.6); return `<s class="${i%3===0?'st':''}" style="left:${x}%;top:${y}%;--t:${1.6+(i%6)*.45}s;--dl:${(i%9)*.31}s"></s>`; }).join('');
   const open=num!=null;
-  return `<div class="bk${open?' open beam done':''}" id="bk"><div class="bkglow"></div><div class="bkrays"></div><div class="bkbeam"></div><div class="bkspark">${sp}</div>
+  return `<div class="bk${open?' open done':''}" id="bk"><div class="bkglow"></div><div class="bkspark">${sp}</div>
   <div class="bkbook"><div class="bkshadow"></div><div class="bkpg p3"></div><div class="bkpg p2"></div><div class="bkpg txt"></div><i class="bkflip"></i><i class="bkflip f2"></i><i class="bkflip f3"></i>
-  <div class="bkcov"><div class="bkfront"></div><div class="bkback"></div></div><div class="bkspine"></div></div>
-  <div class="bkorb${open?' show':''}" id="bkorb"><b>${open?num:''}</b></div></div>
+  <div class="bknum${open?' show':''}" id="bknum"><small>પ્રશ્ન નંબર</small><b>${open?num:''}</b></div>
+  <div class="bkcov"><div class="bkfront"></div><div class="bkback"></div></div><div class="bkspine"></div></div></div>
   <div class="bkcap">📖 સ્વામીની વાતો — નિદિધ્યાસ પ્રકરણ-1</div>`;
 }
+
 function pipHTML(v){ const m={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[v]||[]; let h=''; for(let i=0;i<9;i++) h+='<i class="'+(m.indexOf(i)>-1?'p':'')+'"></i>'; return h; }
 function drawStage(r){
   const m=effMethod(r);
@@ -1813,11 +1827,10 @@ function startDraw(r,pos){
       setTimeout(()=>{ clearInterval(iv); if(d1){ d1.classList.remove('roll'); d1.innerHTML=pipHTML(a); } if(d2){ d2.classList.remove('roll'); d2.innerHTML=pipHTML(b); } playFanfare(); setTimeout(finish,1000); },2300);
     } else if(m==='book'){
       const bk=$('bk'); const get=()=>$('bk');
-      bookSnd('thud',300); [0,300,600,800,1100,1400].forEach(o=>bookSnd('flip',1550+o)); bookSnd('shimmer',4250);
+      bookSnd('thud',300); [0,300,600,800,1100,1400].forEach(o=>bookSnd('flip',1550+o)); 
       setTimeout(()=>{ const b=get(); if(b) b.classList.add('open'); },250);
       setTimeout(()=>{ const b=get(); if(b) b.classList.add('flip'); },1450);
-      setTimeout(()=>{ const b=get(); if(b) b.classList.add('beam'); },3500);
-      setTimeout(()=>{ const b=get(), o=$('bkorb'); if(o){ o.querySelector('b').textContent=num; void o.offsetWidth; o.classList.add('show'); } if(b) b.classList.add('burst'); playFanfare(); setTimeout(finish,1400); },4300);
+      setTimeout(()=>{ const o=$('bknum'); if(o){ o.querySelector('b').textContent=num; void o.offsetWidth; o.classList.add('show'); } bookSnd('shimmer',0); setTimeout(finish,1700); },3650);
     } else {
       const r1=$('r1'), r2=$('r2');
       const i1=setInterval(()=>{ if(r1) r1.textContent=Math.floor(Math.random()*10); },70), i2=setInterval(()=>{ if(r2) r2.textContent=Math.floor(Math.random()*10); },70);

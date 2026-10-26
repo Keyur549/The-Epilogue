@@ -344,6 +344,7 @@ function pubPlayer(room, p, own){
   if (!own){ delete o._ak; delete o._md; delete o._f; }
   return o;
 }
+function cleanMN(n){ const o={}; if(!n||typeof n!=='object') return o; for(const k of ['1','2','3']){ const v=n[k]; if(!v||typeof v!=='object') continue; const gu=String(v.gu||'').trim().slice(0,40), en=String(v.en||'').trim().slice(0,50); if(gu||en) o[k]={gu,en}; } return o; }
 function publicRoom(room){
   if (room.status==='revealed') return {...room, cert:undefined};
   const players = {};
@@ -596,13 +597,13 @@ io.on('connection', (socket) => {
     cb && cb({ok: id===HOST_ID && pw===HOST_PW});
   });
 
-  socket.on('host:create', ({hostName, maxPlayers, qaText}, cb) => {
+  socket.on('host:create', ({hostName, maxPlayers, qaText, modeNames}, cb) => {
     const code = randCode();
     const parsed = parseQA(qaText);
     rooms[code] = {
       code, hostName, maxPlayers: maxPlayers||null, status:'lobby',
       questions: parsed.questions, usedIdx:[], curIdx:null, timerEnd:null,
-      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'book', mode:1, modeDone:false, zoneCards:{}, qClosedAt:{}
+      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'book', mode:1, modeDone:false, zoneCards:{}, qClosedAt:{}, modeNames:cleanMN(modeNames)
     };
     rooms[code].mystery = pickQs(parsed.questions.length, MYSTERY_N, []); rooms[code].voteSet = pickQs(parsed.questions.length, VOTE_N, rooms[code].mystery); rooms[code].voteNow = false;
     socket.join(code);
@@ -703,6 +704,10 @@ io.on('connection', (socket) => {
     if(!(pct>=10 && pct<=90) || !(safe>=5 && safe<=pct)) return;
     r.zonePct=pct; r.zoneSafe=safe; broadcast(code);
   });
+  socket.on('host:setModeNames', ({code, names}, cb) => {
+    const r = rooms[code]; if(!r) return; r.modeNames = cleanMN(names); broadcast(code); cb && cb({ok:true});
+  });
+
   socket.on('host:setDraw', ({code, method}) => {
     const r = rooms[code]; if(!r || !['wheel','ball','dice','slot','kalash','book'].includes(method)) return;
     r.draw=method; broadcast(code);

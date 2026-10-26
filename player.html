@@ -321,7 +321,10 @@ const MODE_INFO={
  2:{ic:'✨',gu:'અવતાર કૃપા મોડ',en:'Divine Intervention Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🤝 Zone Madad, 🔄 Change · ⭐💣 છુપાયેલા'},
  3:{ic:'🪙',gu:'દિવ્ય આશીર્વાદ દાવ મોડ',en:'Wager with Divine Blessing Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🔥 Bonus Streak, 🛡 Safety Net, ♻️ Recharge · 💎⭐💣 છુપાયેલા'}};
 function curMode(r){ const q=r.curIdx!=null&&(r.status==='question'||r.status==='locked'||r.status==='revealing'||r.status==='spinning')?r.questions[r.curIdx]:null; return (q&&q.m)||r.mode||1; }
+const MODE_DEF=JSON.parse(JSON.stringify(MODE_INFO));
+function applyMN(r){ try{ const n=(r&&r.modeNames)||{}; [1,2,3].forEach(m=>{ const o=n[m]||{}; MODE_INFO[m].gu=o.gu||MODE_DEF[m].gu; MODE_INFO[m].en=o.en||MODE_DEF[m].en; }); }catch(e){} }
 function modeBannerHTML(r){
+  applyMN(r);
   if(r.status==='lobby'||r.status==='ended'||r.status==='revealed') return '';
   const m=curMode(r), I=MODE_INFO[m]; const qs=(r.questions||[]); const tot=qs.filter(q=>(q.m||1)===m).length; const done=(r.usedIdx||[]).filter(i=>(qs[i].m||1)===m).length;
   let h=`<div class="mbn m${m}"><span class="mq">${Math.min(done,tot)}/${tot}</span><b>${I.ic} Mode-${m}: ${I.gu}</b><span>${I.en}</span><span>${I.rule}</span></div>`;

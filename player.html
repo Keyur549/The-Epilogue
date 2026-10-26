@@ -420,7 +420,7 @@ function zoneCardHTML(r,p){
   const fl=rev?new Set(zoneOrder(r,mz).slice(0,FL.zn)):null;
   let g='';
   card.forEach((t,i)=>{
-    const cmc=' cm'+((r.zoneCm&&r.zoneCm[i])||1);
+    const cmc='';
     if(rev){ const c=mz.cell[i]; if(c.st===''){ g+=`<div class="zc${cmc}">${esc(t)}</div>`; }
       else if(fl.has(i)) g+=`<div class="zc ${c.st==='ok'?'zok':'zno'}${cmc}">${esc(t)}<em>${c.st==='ok'?'✅':'❌'} ${c.pct}%</em></div>`;
       else g+=`<div class="zc zk${cmc}">${esc(t)}<em class="zl">🔒</em></div>`; }
@@ -968,7 +968,7 @@ function render(){
   const L=p.lives||{}; const inQ=r.status==='question';
   body+=`<div class="card"><div class="grid">`;
   for(let i=0;i<25;i++){
-    let cls='cell cm'+((p.cm&&p.cm[i])||1)+(LT[i]?' inline':'');
+    let cls='cell'+(LT[i]?' inline':'');
     let hintOn=false;
     if(inQ&&p._md&&p._md.qi===r.curIdx&&p._md.list.some(x=>x.text===p.card[i])) hintOn=true;
     if(hintOn) cls+=' hint';
@@ -983,7 +983,7 @@ function render(){
     const ltag=LT[i]?`<span class="ln">${LT[i].map(n=>'L'+n).join('·')}</span>`:'';
     body+=`<div class="${cls}" onclick="playerMark(${i})">${badge}${ltag}${extra}${esc(p.card[i])}</div>`;
   }
-  body+=`</div>${modeLegend()}${rev?'':'<div class="muted" style="text-align:center">🔒 જવાબ સાચો છે કે ખોટો, અને 💎⭐💣 છુપાયેલાં ખાનાં — બધું <b>Reveal</b> પર જ ખૂલશે.</div>'}</div>`;
+  body+=`</div>${rev?'':'<div class="muted" style="text-align:center">🔒 જવાબ સાચો છે કે ખોટો, અને 💎⭐💣 છુપાયેલાં ખાનાં — બધું <b>Reveal</b> પર જ ખૂલશે.</div>'}</div>`;
   if(!rev){
     const lines=markedLines(state.name);
     const opts=[['line1','1 Line',1],['line2','2 Line',2],['line3','3 Line',3],['line4','4 Line',4],['line5','5 Line',5],['full','Full House',5]];

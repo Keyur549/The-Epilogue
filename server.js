@@ -340,7 +340,7 @@ function computeWinners(room){
 function pubPlayer(room, p, own){
   const claims = {};
   for (const [k,c] of Object.entries(p.claims||{})) claims[k] = {ts:(c.shownTs||c.ts), marks:c.marks};
-  const o = {...p, claims}; delete o.hid; delete o._c;
+  const o = {...p, claims}; delete o.hid; delete o._c; delete o.cm;
   if (!own){ delete o._ak; delete o._md; delete o._f; }
   return o;
 }
@@ -374,7 +374,7 @@ function slimFor(room, S, name){
   if (p){
     const k = zkey(p);
     if (room.status==='revealed'){ players[name] = {...p, res:room.results[name]}; if (k && room.zoneInfo[k]) out.myZone = room.zoneInfo[k]; }
-    else { players[name] = pubPlayer(room, p, true); if (k){ out.zoneCard = ensureZoneCard(room,k); out.zoneCm = cardModes(out.zoneCard, room.questions); out.zoneLock = (room.zlock && room.zlock[k]) || null; } }
+    else { players[name] = pubPlayer(room, p, true); if (k){ out.zoneCard = ensureZoneCard(room,k); out.zoneLock = (room.zlock && room.zlock[k]) || null; } }
   }
   return out;
 }

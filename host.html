@@ -196,8 +196,8 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 /* winner Reveal controls sit in a side panel so the winner + score stay fully visible */
 .pjbar.side{left:auto;right:max(10px,env(safe-area-inset-right,0px));top:50%;bottom:auto;transform:translateY(-50%);flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:10px;padding:10px;background:rgba(0,0,0,.35);border-radius:20px;max-width:min(230px,24vw)}
 .pjbar.side button{padding:10px 14px;font-size:clamp(.78rem,1.5vh,1.05rem);border-radius:16px;line-height:1.25}
-#pj .pjin:has(.pjbar:not(.side)){padding-bottom:215px}#pj .pjin:has(.pjbar:not(.side)) .bk{font-size:min(2.35vh,22px)}#pj .pjin:has(.pjbar:not(.side)) .bkcap{display:none}#pj .bk{font-size:min(2.9vh,28px)}
-#pj .pjin:has(.pjbar.side) .pjav{font-size:clamp(3.5rem,16vh,10rem)}#pj .pjin:has(.pjbar.side) .pjfw{display:none}
+#pj .pjin:has(.pjbar:not(.side)){padding-bottom:215px}#pj .pjin:has(.pjbar:not(.side)) .bkcap{display:none}#pj .bk{font-size:min(2.9vh,28px)}
+#pj .pjin:has(.pjw){padding-bottom:96px;gap:4px}#pj .pjin:has(.pjw) .pjav{font-size:clamp(3rem,15vh,9rem)}#pj .pjin:has(.pjw) .pjname{font-size:clamp(1.8rem,8.5vh,5rem)}#pj .pjin:has(.pjw) .pjsc{font-size:clamp(1.4rem,6.5vh,3.4rem);margin-top:2px}#pj .pjin:has(.pjw) .pjfw{display:none}.pjbar.low{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}.pjbar.low button{padding:10px 24px;font-size:clamp(.9rem,2vh,1.2rem)}
 #pj .pjin:has(.pjbar.side){padding-bottom:24px;padding-right:min(250px,26vw)}
 .pjtm{width:100%;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}.pjbar .tm{padding:8px 16px;font-size:clamp(.8rem,1.8vh,1.1rem);background:#334155}.pjbar .tm.cur{background:linear-gradient(135deg,#16a34a,#0f766e)}.pjbar .lbl{align-self:center;color:#fde68a;font-weight:800;font-size:clamp(.8rem,1.8vh,1.1rem)}
 /* 📖 Divine Book draw — "સ્વામીની વાતો" */
@@ -233,11 +233,11 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .bkspark{position:absolute;left:50%;bottom:7em;width:0;height:0;opacity:0}.bk.beam .bkspark,.bk.done .bkspark{opacity:1}
 .bkspark s{position:absolute;left:var(--x);bottom:0;width:.32em;height:.32em;border-radius:50%;background:#fff6c4;box-shadow:0 0 .6em .2em rgba(253,224,71,.9);opacity:0;animation:bkup var(--t) ease-out var(--dl) infinite}
 @keyframes bkup{0%{opacity:0;transform:translateY(0) scale(.5)}20%{opacity:1}100%{opacity:0;transform:translateY(-10em) scale(1.1)}}
-.bkorb{position:absolute;left:50%;bottom:6em;width:8em;height:8em;margin-left:-4em;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(5em) scale(.15);
+.bkorb{position:absolute;left:50%;bottom:6em;width:8em;height:8em;margin-left:-4em;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(3em) scale(.4);
  background:radial-gradient(circle at 38% 32%,#fffdf0,#fff1a8 35%,#fbbf24 70%,#d97706);box-shadow:0 0 1.2em .5em rgba(253,224,71,.95),0 0 4em 1.4em rgba(251,191,36,.6),inset 0 0 1em rgba(255,255,255,.9);z-index:6}
 .bkorb b{font-size:3.4em;line-height:1;font-weight:900;color:#5b2200;text-shadow:0 .03em .06em rgba(255,255,255,.9),0 0 .3em rgba(255,255,255,.8);font-family:'Hind Vadodara',system-ui,sans-serif}
 .bkorb.show{opacity:1;transform:translateY(-.5em) scale(1);transition:transform 1.1s cubic-bezier(.2,1.4,.4,1),opacity .5s}
-.bk.done .bkorb{animation:bkorb 2.4s ease-in-out infinite alternate}@keyframes bkorb{from{transform:translateY(-.5em) scale(1)}to{transform:translateY(-1em) scale(1.05)}}
+@keyframes bkorb{from{transform:translateY(-.5em) scale(1)}to{transform:translateY(-1em) scale(1.05)}}
 .bk.burst:after{content:"";position:absolute;left:50%;bottom:10em;width:2em;height:2em;margin:0 0 0 -1em;border-radius:50%;background:#fff;box-shadow:0 0 3em 3em #fff6c4;opacity:0;animation:bkburst 1s ease-out}
 @keyframes bkburst{0%{opacity:.95;transform:scale(.3)}100%{opacity:0;transform:scale(6)}}
 .bkcap{font-weight:800;color:var(--pd);margin-top:6px;text-align:center}
@@ -1762,7 +1762,7 @@ function bookHTML(spin,num){
   const open=num!=null;
   return `<div class="bk${open?' open beam done':''}" id="bk"><div class="bkglow"></div><div class="bkrays"></div><div class="bkbeam"></div><div class="bkspark">${sp}</div>
   <div class="bkbook"><div class="bkshadow"></div><div class="bkpg p3"></div><div class="bkpg p2"></div><div class="bkpg txt"></div><i class="bkflip"></i><i class="bkflip f2"></i><i class="bkflip f3"></i>
-  <div class="bkcov"><div class="bkfront"><div class="om">ૐ</div><div class="orn"></div><h3>સ્વામીની વાતો</h3><div class="orn"></div><p>નિદિધ્યાસ પ્રકરણ-1 ની 22 વાતો</p></div><div class="bkback">ॐ</div></div><div class="bkspine"></div></div>
+  <div class="bkcov"><div class="bkfront"><div class="orn"></div><h3>સ્વામીની વાતો</h3><div class="orn"></div><p>નિદિધ્યાસ પ્રકરણ-1 ની 22 વાતો</p></div><div class="bkback"></div></div><div class="bkspine"></div></div>
   <div class="bkorb${open?' show':''}" id="bkorb"><b>${open?num:''}</b></div></div>
   <div class="bkcap">📖 સ્વામીની વાતો — નિદિધ્યાસ પ્રકરણ-1</div>`;
 }
@@ -2541,7 +2541,7 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
   else if(st==='box'){var lastR=(r.round||0)>=(((r.cfg&&r.cfg.rounds)||7)-1);b=btn('nextround',lastR?'🏁 છેલ્લો Round પૂરો':'➡️ Next Round (નવું Wheel)','go')+btn('end','🏁 Game પૂરી','sk')}
   else if(st==='opening')b=btn('reveal','🏆 Result Reveal શરૂ કરો','go');
   else if(st==='revealed'){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[];b=((r.revealStep||0)<=O.length)?btn('next','⏭ આગળ (Next Winner)','go'):'';if((r.revealStep||0)>O.length)b+=btn('dash','📊 Dashboard','go')+btn('sc',r.scReveal?'✅ Scratch Card Reveal થયું · 🔒 છુપાવો':'🎁 Scratch Card Reveal કરો','go')+btn('xls','⬇ Excel','sk')}
-  return b?'<div class="pjbar'+(st==='revealed'?' side':'')+'">'+b+'</div>':''}
+  return b?'<div class="pjbar'+(st==='revealed'?' low':'')+'">'+b+'</div>':''}
  function stage(r){var h='';try{if((!wheelLayout||!spinning)&&typeof computeLayout==='function')wheelLayout=computeLayout(r);
    h=(typeof drawStage==='function')?drawStage(r):wheelSVG(wheelLayout,wheelRotation,pendingReveal)}catch(e){h=''}
   var n=(typeof pendingReveal!=='undefined'&&pendingReveal!=null&&!spinning&&r.status==='revealing')?pendingReveal:null;

@@ -144,6 +144,42 @@ function pickQs(total, n, avoid){ const a=[]; for(let i=0;i<total;i++) if(!avoid
 function mystReward(room, name, qi){ let h=7; const t=(room.code||'')+'|'+name+'|'+qi; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; const m=h%10; return m<5?1:(m<8?2:3); }
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
+const SANK=[4,6,8], SANK_PTS=[5,10,15], PRAT_PCT=0.75, PRAT_PTS=10;
+const KARMA=['ashirvad','nyay','zadap','toofan','prakash','agni'];   // same order as the host wheel
+function modeStats(room,m){
+  const S={}, pos=room.usedIdx;
+  for(const [n,p] of Object.entries(room.players)){
+    let cor=0,wr=0,base=0,fast=null;
+    for(const [ci,qi] of Object.entries(p.marks||{})){ const q=room.questions[qi]; if(!q||(q.m||1)!==m||!pos.includes(+qi)) continue;
+      if(q.a===p.card[+ci]){ cor++; base++; const t=(p.markTs||{})[qi], o=(room.qOpenAt||{})[qi]||(closeTs(room,+qi)-((room.qSec||30)*1000)); if(t){ const d=Math.max(0,t-o); if(fast===null||d<fast) fast=d; } }
+      else { wr++; if(m!==1) base--; } }
+    S[n]={cor,wr,base,fast};
+  }
+  return S;
+}
+function zoneAgg(room,S){ const Z={}; for(const [n,p] of Object.entries(room.players)){ const k=zkey(p); if(!k) continue; const z=Z[k]||(Z[k]={key:k,names:[],base:0,wr:0}); z.names.push(n); z.base+=S[n].base; z.wr+=S[n].wr; } for(const z of Object.values(Z)){ z.avgBase=z.base/z.names.length; z.avgWr=z.wr/z.names.length; } return Z; }
+function karmaFx(room){            // {p:{name:[{m,key,pts}]}, z:{zkey:[{m,key,pts}]}}
+  const F={p:{},z:{}}; const addP=(n,o)=>{ (F.p[n]=F.p[n]||[]).push(o); }, addZ=(k,o)=>{ (F.z[k]=F.z[k]||[]).push(o); };
+  for(const [ms,K] of Object.entries(room.karma||{})){ const m=+ms, S=modeStats(room,m), Z=zoneAgg(room,S), zs=Object.values(Z);
+    if(K.key==='nyay'){ for(const n of Object.keys(room.players)) addP(n,{m,key:'nyay',pts:(m===1||S[n].wr>0)?1:0}); }
+    else if(K.key==='zadap'){ let best=null,bn=null; for(const [n,x] of Object.entries(S)) if(x.fast!==null && (best===null||x.fast<best)){ best=x.fast; bn=n; } if(bn) addP(bn,{m,key:'zadap',pts:3,ms:best}); }
+    else if(K.key==='prakash'){ for(const n of (K.names||[])) if(room.players[n]) addP(n,{m,key:'prakash',pts:3}); }
+    else if(zs.length>=2){
+      if(K.key==='ashirvad'){ const lo=Math.min(...zs.map(z=>z.avgBase)); zs.filter(z=>z.avgBase===lo).forEach(z=>addZ(z.key,{m,key:'ashirvad',pts:4})); }
+      if(K.key==='agni'){ const hi=Math.max(...zs.map(z=>z.avgBase)); zs.filter(z=>z.avgBase===hi).forEach(z=>addZ(z.key,{m,key:'agni',pts:-2})); }
+      if(K.key==='toofan'){ const hi=Math.max(...zs.map(z=>z.avgWr)); if(hi>0) zs.filter(z=>z.avgWr===hi).forEach(z=>addZ(z.key,{m,key:'toofan',pts:-2})); }
+    }
+  }
+  return F;
+}
+function sankSummary(room){         // per mode, per zone: how many met their Sankalp
+  const out={};
+  for(const [ms,picks] of Object.entries(room.sank||{})){ const m=+ms, S=modeStats(room,m), zs={};
+    for(const [n,p] of Object.entries(room.players)){ const k=zkey(p); if(!k) continue; const z=zs[k]||(zs[k]={key:k,zone:String(p.zone).trim(),count:0,met:0}); z.count++; if(picks[n] && S[n].cor>=picks[n]) z.met++; }
+    for(const z of Object.values(zs)){ z.pct=z.count?z.met/z.count:0; z.ok=z.count>0 && z.pct>=PRAT_PCT; }
+    out[m]=zs; }
+  return out;
+}
 const ZONE_LINE_PTS=3, ZONE_LINE_MAX=5, ZONE_FULL_PTS=15;
 function zkey(p){ return String(p.zone||'').trim().toLowerCase(); }
 const STREAK_LEN = 3, STREAK_WIN = 10, STREAK_LOSE = -5;
@@ -271,10 +307,14 @@ function playerResults(room, pname){
   for (const sq of streakStarts(p)){ const w = streakWindow(room, sq); if (!w) continue; const okAll = w.every(q=>{ const ci=markCell(p,q); return ci!==undefined && p.card[ci]===room.questions[q].a; }); streakPts += okAll ? STREAK_WIN : STREAK_LOSE; streakOk = okAll; }
   let mysteryPts = 0; const mysteryQs = [];
   for (const qi of (room.mystery||[])){ if(!room.usedIdx.includes(qi)) continue; const ci=markCell(p,qi); if(ci===undefined || room.questions[qi].a!==p.card[ci]) continue; const pt=mystReward(room,pname,qi); mysteryPts+=pt; mysteryQs.push({qi,pts:pt}); }
-  const personal = base + hiddenPts + streakPts + mysteryPts;
+  const sank=[]; let sankPts=0, zonePrat=0; const SS=sankSummary(room), KF=karmaFx(room);
+  for(const [ms,picks] of Object.entries(room.sank||{})){ const m=+ms, pick=picks[pname]; if(!pick) continue; const got=modeStats(room,m)[pname].cor, met=got>=pick, pts=met?SANK_PTS[SANK.indexOf(pick)]:0; sankPts+=pts; sank.push({m,pick,got,met,pts}); }
+  const zk=zkey(p), prat=[]; for(const [ms,zs] of Object.entries(SS)){ const z=zs[zk]; if(z){ const pts=z.ok?PRAT_PTS:0; zonePrat+=pts; prat.push({m:+ms,met:z.met,count:z.count,pct:Math.round(z.pct*100),ok:z.ok,pts}); } }
+  const karmaP=(KF.p[pname]||[]).slice(), karmaZ=(KF.z[zk]||[]).slice(); const karmaPts=karmaP.reduce((a,x)=>a+x.pts,0), karmaZPts=karmaZ.reduce((a,x)=>a+x.pts,0);
+  const personal = base + hiddenPts + streakPts + mysteryPts + sankPts + karmaPts;
   const zi = room.zoneInfo && room.zoneInfo[zkey(p)];
-  const zoneBonus = zi ? zi.bonus : 0;
-  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, mysteryPts, mysteryQs, gems, stars, bombs, personal, zoneBonus, netScore: personal+zoneBonus };
+  const zoneBonus = (zi ? zi.bonus : 0) + zonePrat + karmaZPts;
+  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, mysteryPts, mysteryQs, gems, stars, bombs, sank, sankPts, prat, zonePrat, karmaP, karmaZ, karmaPts, karmaZPts, personal, zoneBonus, netScore: personal+zoneBonus };
 }
 function computeAll(r){
   r.zoneInfo = zoneCompute(r, true);
@@ -345,11 +385,12 @@ function pubPlayer(room, p, own){
   return o;
 }
 function cleanMN(n){ const o={}; if(!n||typeof n!=='object') return o; for(const k of ['1','2','3']){ const v=n[k]; if(!v||typeof v!=='object') continue; const gu=String(v.gu||'').trim().slice(0,40), en=String(v.en||'').trim().slice(0,50); if(gu||en) o[k]={gu,en}; } return o; }
+function mstageInfo(room){ const kk={}; for(const [m,k] of Object.entries(room.karma||{})) kk[m]=KARMA.indexOf(k.key); const sn=room.sankFor&&room.sank&&room.sank[room.sankFor]?Object.keys(room.sank[room.sankFor]).length:0; return {sankN:sn, karmaKeys:kk}; }
 function publicRoom(room){
-  if (room.status==='revealed') return {...room, cert:undefined};
+  if (room.status==='revealed') return {...room, ...mstageInfo(room), cert:undefined};
   const players = {};
   for (const [n,p] of Object.entries(room.players)) players[n] = pubPlayer(room,p,false);
-  return {...room, cert:undefined, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), players};
+  return {...room, ...mstageInfo(room), cert:undefined, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), players};
 }
 // ---- 500-player friendly state: a PLAYER only receives his own data (+ the few winners after the reveal).
 function zoneSummary(room){
@@ -358,19 +399,20 @@ function zoneSummary(room){
 }
 function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='question'||room.status==='locked'); for(const p of Object.values(room.players||{})){ const z=String((p&&p.zone)||'').trim(); if(!z) continue; const k=z.toLowerCase(); const o=m[k]||(m[k]={z,i:Object.keys(m).length,n:0,a:0,l:0}); o.n++; if(live&&q!=null&&Object.values(p.marks||{}).includes(q)) o.a++; } if(room.zlock) for(const k in m){ const zl=room.zlock[k]; if(zl&&zl.locks) m[k].l=zl.locks.reduce((s,x)=>s+(x?1:0),0); } return Object.values(m).slice(0,40); }
 function slimBase(room){
-  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, ...rest } = room;
+  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, sank, karma, qOpenAt, ...rest } = room;
   const n = Object.keys(players).length;
   if (room.status==='revealed'){
     const keep = {};
     for (const k of ['line1','line2','line3','line4','line5','full','top1','top2','top3']){ const v=(room.winners||{})[k]; if (typeof v==='string' && players[v]) keep[v]={...players[v], res:results[v]}; }
     return {base:{...rest, nPlayers:n, zoneS:zoneSummary(room)}, keep};
   }
-  return {base:{...rest, nPlayers:n, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), zoneProg: zoneProgOf(room)}, keep:{}};
+  return {base:{...rest, ...mstageInfo(room), nPlayers:n, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), zoneProg: zoneProgOf(room)}, keep:{}};
 }
 function zoneListOf(room){ const seen=[],m={}; for(const p of Object.values(room.players||{})){ const k=String((p&&p.zone)||'').trim().toLowerCase(); if(k&&!(k in m)){ m[k]=seen.length; seen.push(k);} } return m; }
 function slimFor(room, S, name){
   const players = {...S.keep}; const out = {...S.base, players};
   const p = name && room.players[name];
+  if (p && room.sankFor && room.sank && room.sank[room.sankFor]) out.mySank = room.sank[room.sankFor][name]||0;
   { const zi=(S.zi||(S.zi=zoneListOf(room))); const pz=p?String(p.zone||'').trim().toLowerCase():''; out.zoneIdx=(pz in zi)?zi[pz]:null; }
   if (p){
     const k = zkey(p);
@@ -611,7 +653,7 @@ io.on('connection', (socket) => {
     broadcast(code);
   });
 
-  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); broadcast(code); });
+  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); if(!r.sank){ r.sank={}; r.karma={}; r.qOpenAt={}; } r.mstage='sankalp'; r.sankFor=1; r.chakraFor=null; broadcast(code); });
 
   const REVEAL_MS=1600;       // how long the big number popup stays up before the question appears
   const SPIN_SAFETY_MS=9500;  // safety net only — if host's browser never confirms, auto-advance so the game can't get stuck
@@ -619,11 +661,11 @@ io.on('connection', (socket) => {
     const r = rooms[code]; if(!r) return;
     if(r.status!=='active' && r.status!=='locked') return; // ignore duplicate/racing spin clicks — fixes skipped questions
     if (!r.mode) r.mode=1;
-    if (r.modeDone){ return; }                                   // host must start the next mode first
+    if (r.modeDone || r.mstage){ return; }                       // host must finish Sankalp / Karm Chakra first
     const avail=[]; for(let i=0;i<r.questions.length;i++) if(!r.usedIdx.includes(i) && (r.questions[i].m||1)===r.mode) avail.push(i);
     if (avail.length===0){
       const more = [1,2,3].some(m=>m>r.mode && r.questions.some((q,i)=>(q.m||1)===m && !r.usedIdx.includes(i)));
-      if (more){ r.modeDone=true; r.status='locked'; r.timerEnd=null; } else r.status='ended';
+      r.modeDone=true; r.status='locked'; r.timerEnd=null; if(!more){ r.lastMode=true; r.mstage='chakra'; r.chakraFor=r.mode; }
       broadcast(code); return;
     }
     const idx = avail[Math.floor(Math.random()*avail.length)];
@@ -641,7 +683,7 @@ io.on('connection', (socket) => {
     r.status='revealing'; broadcast(code);
     setTimeout(()=>{
       const rr=rooms[code]; if(!rr||rr.status!=='revealing'||rr.curIdx!==idx) return;
-      rr.status='question'; rr.voteNow=(rr.voteSet||[]).includes(idx); rr.timerEnd=Date.now()+(rr.qSec||30)*1000; broadcast(code);
+      if(!rr.qOpenAt) rr.qOpenAt={}; rr.qOpenAt[idx]=Date.now(); rr.status='question'; rr.voteNow=(rr.voteSet||[]).includes(idx); rr.timerEnd=Date.now()+(rr.qSec||30)*1000; broadcast(code);
     }, REVEAL_MS);
   }
   // Host's own wheel tells us exactly when its CSS animation visually finished — no guessing, no drift.
@@ -666,14 +708,36 @@ io.on('connection', (socket) => {
     lockQ(r); r.paused=false; r.pausedMs=null; broadcast(code);
   });
   // Epilogue modes: host starts the next mode (or jumps to a chosen one) after a mode is finished
-  socket.on('host:nextMode', ({code, mode}, cb) => {
+  // Epilogue modes. After a Mode: (1) next Mode's Sankalp + Zone Pratigya, (2) Karm Chakra for the finished Mode, (3) next Mode starts.
+  function nextModeNo(r,from){ const has=x=>r.questions.some((q,i)=>(q.m||1)===x && !r.usedIdx.includes(i)); let m=from; while(m<=3 && !has(m)) m++; return m; }
+  function beginMode(r,m){ r.mode=m; r.modeDone=false; r.status='active'; r.mstage=null; r.sankFor=null; r.chakraFor=null; r.modeStartAt=Date.now(); }
+  socket.on('host:nextMode', ({code}, cb) => {
     const r = rooms[code]; if(!r) return;
-    if (!['active','locked'].includes(r.status)){ cb&&cb({ok:false,error:'પહેલા ચાલુ Question પૂરો કરો.'}); return; }
-    let m = (+mode>=1 && +mode<=3) ? +mode : (r.mode||1)+1;
-    const has = x => r.questions.some((q,i)=>(q.m||1)===x && !r.usedIdx.includes(i));
-    while (m<=3 && !has(m)) m++;
-    if (m>3){ r.status='ended'; r.modeDone=false; broadcast(code); cb&&cb({ok:true,ended:true}); return; }
-    r.mode=m; r.modeDone=false; r.status='active'; r.modeStartAt=Date.now(); broadcast(code); cb&&cb({ok:true,mode:m});
+    if (!r.modeDone || r.mstage){ cb&&cb({ok:false,error:'Mode હજી પૂરો નથી.'}); return; }
+    const m = nextModeNo(r,(r.mode||1)+1);
+    r.chakraFor = r.mode;
+    if (m>3){ r.mstage='chakra'; r.lastMode=true; } else { r.mstage='sankalp'; r.sankFor=m; }
+    broadcast(code); cb&&cb({ok:true,mode:m});
+  });
+  socket.on('player:sankalp', ({code,name,pick}) => {
+    seen(code,name); const r=rooms[code]; if(!r||r.mstage!=='sankalp'||!r.players[name]) return; pick=+pick; if(!SANK.includes(pick)) return;
+    r.sank=r.sank||{}; (r.sank[r.sankFor]=r.sank[r.sankFor]||{})[name]=pick; touch(socket,code,name);
+  });
+  socket.on('host:sankalpDone', ({code}) => {
+    const r=rooms[code]; if(!r||r.mstage!=='sankalp') return;
+    if (r.chakraFor){ r.mstage='chakra'; broadcast(code); } else { beginMode(r,r.sankFor||1); broadcast(code); }
+  });
+  socket.on('host:spinKarma', ({code}, cb) => {
+    const r=rooms[code]; if(!r||r.mstage!=='chakra'||!r.chakraFor) return; r.karma=r.karma||{};
+    if (r.karma[r.chakraFor]) return;
+    const key=KARMA[Math.floor(Math.random()*KARMA.length)], K={key,at:Date.now()};
+    if(key==='prakash'){ const ns=Object.keys(r.players); for(let i=ns.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ns[i],ns[j]]=[ns[j],ns[i]]; } K.names=ns.slice(0,5); }
+    r.karma[r.chakraFor]=K; r.karmaSpin=Date.now(); broadcast(code); cb&&cb({ok:true});
+  });
+  socket.on('host:karmaDone', ({code}) => {
+    const r=rooms[code]; if(!r||r.mstage!=='chakra'||!(r.karma&&r.karma[r.chakraFor])) return;
+    if (r.lastMode){ r.mstage=null; r.chakraFor=null; r.status='ended'; r.modeDone=false; broadcast(code); return; }
+    beginMode(r, r.sankFor||nextModeNo(r,(r.mode||1)+1)); broadcast(code);
   });
   // add a question by hand (Lobby only: every Player's card is re-made so the new answer can be on it)
   socket.on('host:addQ', ({code,q,a,m,img,aud}, cb) => {

@@ -220,7 +220,15 @@ function zoneNeed(r, active, safe){
   return ns<need ? ns : Math.max(1, need-1);
 }
 function closeTs(r, qi){ return (r.qClosedAt && r.qClosedAt[qi]) || r.lastSpinAt || Date.now(); }
-function lockQ(r){ if (r.curIdx!=null){ if(!r.qClosedAt) r.qClosedAt={}; r.qClosedAt[r.curIdx]=Date.now(); } r.status='locked'; r.timerEnd=null; try{ refreshZoneLocks(r); }catch(e){ console.error('zlock',e); } }
+// When the LAST question of a Mode closes, the Mode is finished right away (no extra spin needed) -> host sees Sankalp / Karm Chakra at once
+function modeFinishCheck(r){
+  if (!r.mode || r.modeDone || r.mstage || r.status!=='locked' || !r.sank) return;
+  const left = r.questions.some((q,i)=>(q.m||1)===r.mode && !r.usedIdx.includes(i)); if (left) return;
+  if (!r.usedIdx.some(i=>(r.questions[i].m||1)===r.mode)) return;
+  const more = [1,2,3].some(m=>m>r.mode && r.questions.some((q,i)=>(q.m||1)===m && !r.usedIdx.includes(i)));
+  r.modeDone=true; r.timerEnd=null; if(!more){ r.lastMode=true; r.mstage='chakra'; r.chakraFor=r.mode; }
+}
+function lockQ(r){ if (r.curIdx!=null){ if(!r.qClosedAt) r.qClosedAt={}; r.qClosedAt[r.curIdx]=Date.now(); } r.status='locked'; r.timerEnd=null; try{ refreshZoneLocks(r); }catch(e){ console.error('zlock',e); } modeFinishCheck(r); }
 
 // Zone cards. A Zone-card cell LOCKS when >=30% (host-tunable) of the Zone's active Players picked THAT answer on a question,
 // right or wrong (just like a Player's own card). Right/wrong only becomes known at Reveal. Replayed in draw order so every Line gets a time.
@@ -631,7 +639,7 @@ io.on('connection', (socket) => {
     }
     if (r.qClosedAt) delete r.qClosedAt[idx];
     try{ refreshZoneLocks(r); }catch(e){}
-    r.status='active'; r.curIdx=null; r.timerEnd=null; r.paused=false; r.pausedMs=null; r.modeDone=false;
+    r.status='active'; r.curIdx=null; r.timerEnd=null; r.paused=false; r.pausedMs=null; r.modeDone=false; r.mstage=null; r.chakraFor=null;
     cb && cb({ok:true});
     broadcast(code);
   });
@@ -780,7 +788,7 @@ io.on('connection', (socket) => {
     r.draw=method; broadcast(code);
   });
 
-  socket.on('host:end', ({code}) => { const r=rooms[code]; if(!r) return; if(r.status==='question') lockQ(r); r.status='ended'; r.paused=false; broadcast(code); });
+  socket.on('host:end', ({code}) => { const r=rooms[code]; if(!r) return; if(r.status==='question') lockQ(r); r.status='ended'; r.paused=false; r.mstage=null; r.modeDone=false; broadcast(code); });
 
   // Host's live note shown under every player's Scratch Card message
   socket.on('host:scNote', ({code, text}, cb) => {

@@ -1973,7 +1973,7 @@ function hostStart(){ socket.emit('host:start',{code:state.code}); }
 
 /* ===== 🕉 Sankalp + 🏛 Zone Pratigya + 🎡 Karm Chakra (Mode ni vachche) ===== */
 const KARMA_GU=[['🌱','આશીર્વાદ','સૌથી ઓછા સાચા જવાબ (સરેરાશ) વાળા Zone ના દરેક Player ને +4','#16a34a'],['⚖️','ન્યાય','દરેક Player નો એક ખોટા જવાબનો −1 માફ (Mode-1 માં બધાને +1 ભેટ)','#0ea5e9'],['🏃','ઝડપ','Mode માં સૌથી ઝડપી સાચા જવાબ આપનાર Player ને +3','#7c3aed'],['🌪','તોફાન','Mode માં સૌથી વધુ ખોટા જવાબ (સરેરાશ) વાળા Zone ના દરેક Player ને −2','#64748b'],['🪔','પ્રકાશ','કોઈ પણ 5 Players ને રેન્ડમ +3','#dc2626'],['🔥','અગ્નિ પરીક્ષા','Mode માં સૌથી વધુ સાચા જવાબ (સરેરાશ) વાળા Zone ના દરેક Player ને −2','#f59e0b']];
-const SANK_OPT=[[4,5],[6,10],[8,15]], PRAT_PCT=75, PRAT_PTS=10;
+const SANK_OPT=[[4,5,-2],[6,10,-5],[8,15,-7]], PRAT_PCT=70, PRAT_PTS=10, PRAT_PEN=-10;
 function hostSankDone(){ socket.emit('host:sankalpDone',{code:state.code}); }
 function hostSpinKarma(){ socket.emit('host:spinKarma',{code:state.code}); }
 function hostKarmaDone(){ socket.emit('host:karmaDone',{code:state.code}); }
@@ -1992,9 +1992,9 @@ function mstageView(r){
   if(st==='sankalp'){ const m=r.sankFor||1,n=r.nPlayers||0;
     return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,#7c3aed,#db2777)">🎯 સંકલ્પ + 🏛 ઝોન પ્રતિજ્ઞા · MODE-'+m+'</div>'
      +'<div class="pjs">આ Mode માં હું કેટલા સાચા જવાબ આપીશ? દરેક Player Phone માં સંકલ્પ લે</div>'
-     +'<div class="ksrow">'+SANK_OPT.map(o=>'<div class="ksopt"><b>'+o[0]+'</b><small>સાચા જવાબ</small><em>+'+o[1]+'</em></div>').join('')+'</div>'
-     +'<div class="pjs">🏛 Zone ના '+PRAT_PCT+'% કે વધુ Players સંકલ્પ પાળે તો Zone ને +'+PRAT_PTS+'</div>'
-     +(function(){var l=Math.max(0,Math.ceil(((r.sankEnd||0)-Date.now())/1000));return '<div class="pjt'+(l<=10?' lo':'')+'">'+(l>0?'⏱ '+l+' સેકન્ડ':'⌛ સમય પૂરો')+'</div>'})()
+     +'<div class="ksrow">'+SANK_OPT.map(o=>'<div class="ksopt"><b>'+o[0]+'</b><small>સાચા જવાબ</small><em>+'+o[1]+'</em><small style="color:#fca5a5">ન પાળો તો '+o[2]+'</small></div>').join('')+'</div>'
+     +'<div class="pjs">🏛 Zone ના '+PRAT_PCT+'% કે વધુ Players સંકલ્પ પાળે તો Zone ને +'+PRAT_PTS+' · ઓછા પાળે તો Zone ના દરેકને '+PRAT_PEN+'</div>'
+     +(function(){var l=Math.max(0,Math.ceil(((r.sankEnd||0)-Date.now())/1000));return '<div class="pjt'+(l<=10?' lo':'')+'" style="font-size:clamp(1.6rem,6vh,3.4rem)">'+(l>0?'⏱ '+l+' સેકન્ડ':'⌛ સમય પૂરો')+'</div>'})()
      +'<div class="pjn">✅ '+(r.sankN||0)+' / '+n+' Players એ સંકલ્પ લીધો</div>'
      +'<div class="pjs" style="opacity:.7">🔒 પરિણામ છેલ્લે Result માં ખૂલશે</div>'; }
   const m=r.chakraFor,W=karmaWheel(r),K=W.has?KARMA_GU[W.ki]:null;

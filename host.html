@@ -1982,10 +1982,11 @@ function karmaWheel(r){
 function mstageView(r){
   const st=r.mstage;
   if(st==='sankalp'){ const m=r.sankFor||1,n=r.nPlayers||0;
-    return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,#7c3aed,#db2777)">🕉 સંકલ્પ + 🏛 ઝોન પ્રતિજ્ઞા · MODE-'+m+'</div>'
+    return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,#7c3aed,#db2777)">🎯 સંકલ્પ + 🏛 ઝોન પ્રતિજ્ઞા · MODE-'+m+'</div>'
      +'<div class="pjs">આ Mode માં હું કેટલા સાચા જવાબ આપીશ? દરેક Player Phone માં સંકલ્પ લે</div>'
      +'<div class="ksrow">'+SANK_OPT.map(o=>'<div class="ksopt"><b>'+o[0]+'</b><small>સાચા જવાબ</small><em>+'+o[1]+'</em></div>').join('')+'</div>'
      +'<div class="pjs">🏛 Zone ના '+PRAT_PCT+'% કે વધુ Players સંકલ્પ પાળે તો Zone ને +'+PRAT_PTS+'</div>'
+     +(function(){var l=Math.max(0,Math.ceil(((r.sankEnd||0)-Date.now())/1000));return '<div class="pjt'+(l<=10?' lo':'')+'">'+(l>0?'⏱ '+l+' સેકન્ડ':'⌛ સમય પૂરો')+'</div>'})()
      +'<div class="pjn">✅ '+(r.sankN||0)+' / '+n+' Players એ સંકલ્પ લીધો</div>'
      +'<div class="pjs" style="opacity:.7">🔒 પરિણામ છેલ્લે Result માં ખૂલશે</div>'; }
   const m=r.chakraFor,W=karmaWheel(r),K=W.has?KARMA_GU[W.ki]:null;
@@ -2007,7 +2008,7 @@ function hostModeBar(r){
   applyMN(r);
   const m=r.mode||1, I=MODE_GU[m], c=modeCounts(r);
   let h=`<div class="mbh m${m}"><b>${I[0]} Mode-${m}: ${I[1]}</b> <small>${I[2]}</small><span>${I[3]} · પ્રશ્ન ${c[m][0]}/${c[m][1]}</span></div>`;
-  if(r.mstage==='sankalp'){ h+=`<div class="muted" style="margin:6px 0"><b>🕉 Mode-${r.sankFor||1} નો સંકલ્પ + 🏛 Zone પ્રતિજ્ઞા ચાલુ.</b> ✅ ${r.sankN||0}/${r.nPlayers||0} Players એ લીધો.</div><button class="btn go" onclick="hostSankDone()">🔒 સંકલ્પ બંધ — ${r.chakraFor?'કર્મ ચક્ર':'Mode-'+(r.sankFor||1)+' શરૂ'}</button>`; }
+  if(r.mstage==='sankalp'){ h+=`<div class="muted" style="margin:6px 0"><b>🎯 Mode-${r.sankFor||1} નો સંકલ્પ + 🏛 Zone પ્રતિજ્ઞા ચાલુ.</b> ✅ ${r.sankN||0}/${r.nPlayers||0} Players એ લીધો.</div><button class="btn go" onclick="hostSankDone()">🔒 સંકલ્પ બંધ — ${r.chakraFor?'કર્મ ચક્ર':'Mode-'+(r.sankFor||1)+' શરૂ'}</button>`; }
   else if(r.mstage==='chakra'){ const has=((r.karmaKeys||{})[r.chakraFor]!=null&&(r.karmaKeys||{})[r.chakraFor]>=0); h+=`<div class="muted" style="margin:6px 0"><b>🎡 Mode-${r.chakraFor} નું કર્મ ચક્ર.</b> Projector ચાલુ રાખો.</div>`+(has?`<div class="muted">આવ્યું: <b>${KARMA_GU[r.karmaKeys[r.chakraFor]][0]} ${KARMA_GU[r.karmaKeys[r.chakraFor]][1]}</b></div><button class="btn go" onclick="hostKarmaDone()">${r.lastMode?'🏁 Game પૂરી — Result':'▶ Mode-'+((r.sankFor)||(m+1))+' શરૂ કરો'}</button>`:`<button class="btn go" onclick="hostSpinKarma()">🎡 ચક્ર ફેરવો</button>`); }
   else if(r.modeDone){ const n=m+1; h+=`<div class="muted" style="margin:6px 0"><b>🎉 Mode-${m} પૂરો.</b> ${MODE_GU[n]?`હવે Mode-${n} નો સંકલ્પ + પ્રતિજ્ઞા શરૂ કરો:`:'હવે કર્મ ચક્ર:'}</div><button class="btn go" onclick="hostNextMode()">${MODE_GU[n]?`▶ Mode-${n} નો સંકલ્પ શરૂ કરો`:'🎡 કર્મ ચક્ર શરૂ કરો'}</button>`; }
   return h;

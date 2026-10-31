@@ -144,6 +144,7 @@ function pickQs(total, n, avoid){ const a=[]; for(let i=0;i<total;i++) if(!avoid
 function mystReward(room, name, qi){ let h=7; const t=(room.code||'')+'|'+name+'|'+qi; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; const m=h%10; return m<5?1:(m<8?2:3); }
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
+const SANK_SEC=60;
 const SANK=[4,6,8], SANK_PTS=[5,10,15], PRAT_PCT=0.75, PRAT_PTS=10;
 const KARMA=['ashirvad','nyay','zadap','toofan','prakash','agni'];   // same order as the host wheel
 function modeStats(room,m){
@@ -653,7 +654,7 @@ io.on('connection', (socket) => {
     broadcast(code);
   });
 
-  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); if(!r.sank){ r.sank={}; r.karma={}; r.qOpenAt={}; } r.mstage='sankalp'; r.sankFor=1; r.chakraFor=null; broadcast(code); });
+  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); if(!r.sank){ r.sank={}; r.karma={}; r.qOpenAt={}; } r.mstage='sankalp'; r.sankFor=1; r.chakraFor=null; r.sankEnd=Date.now()+SANK_SEC*1000; broadcast(code); });
 
   const REVEAL_MS=1600;       // how long the big number popup stays up before the question appears
   const SPIN_SAFETY_MS=9500;  // safety net only — if host's browser never confirms, auto-advance so the game can't get stuck
@@ -665,7 +666,7 @@ io.on('connection', (socket) => {
     const avail=[]; for(let i=0;i<r.questions.length;i++) if(!r.usedIdx.includes(i) && (r.questions[i].m||1)===r.mode) avail.push(i);
     if (avail.length===0){
       const more = [1,2,3].some(m=>m>r.mode && r.questions.some((q,i)=>(q.m||1)===m && !r.usedIdx.includes(i)));
-      r.modeDone=true; r.status='locked'; r.timerEnd=null; if(!more){ r.lastMode=true; r.mstage='chakra'; r.chakraFor=r.mode; }
+      r.modeDone=true; r.status='locked'; r.timerEnd=null; if(!more){ r.lastMode=true; r.mstage='chakra'; r.chakraFor=r.mode; }   // Karm Chakra after every Mode (incl. the last)
       broadcast(code); return;
     }
     const idx = avail[Math.floor(Math.random()*avail.length)];
@@ -716,12 +717,14 @@ io.on('connection', (socket) => {
     if (!r.modeDone || r.mstage){ cb&&cb({ok:false,error:'Mode હજી પૂરો નથી.'}); return; }
     const m = nextModeNo(r,(r.mode||1)+1);
     r.chakraFor = r.mode;
-    if (m>3){ r.mstage='chakra'; r.lastMode=true; } else { r.mstage='sankalp'; r.sankFor=m; }
+    if (m>3){ r.mstage='chakra'; r.lastMode=true; } else { r.mstage='sankalp'; r.sankFor=m; r.sankEnd=Date.now()+SANK_SEC*1000; }
     broadcast(code); cb&&cb({ok:true,mode:m});
   });
   socket.on('player:sankalp', ({code,name,pick}) => {
     seen(code,name); const r=rooms[code]; if(!r||r.mstage!=='sankalp'||!r.players[name]) return; pick=+pick; if(!SANK.includes(pick)) return;
-    r.sank=r.sank||{}; (r.sank[r.sankFor]=r.sank[r.sankFor]||{})[name]=pick; touch(socket,code,name);
+    if (Date.now()>(r.sankEnd||0)+1500) return;                       // 1 minute only
+    r.sank=r.sank||{}; const M=(r.sank[r.sankFor]=r.sank[r.sankFor]||{}); if (M[name]) return;   // choose once, no change
+    M[name]=pick; touch(socket,code,name);
   });
   socket.on('host:sankalpDone', ({code}) => {
     const r=rooms[code]; if(!r||r.mstage!=='sankalp') return;

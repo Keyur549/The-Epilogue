@@ -319,15 +319,18 @@ socket.on('zlive', d=>{ state.zl=d; if(state.room&&state.room.status==='question
 
 /* ===== 🕉 Sankalp + 🏛 Zone Pratigya + 🎡 Karm Chakra ===== */
 const KARMA_PL=[['🌱','આશીર્વાદ','સૌથી ઓછા સાચા જવાબ વાળા Zone ને +4'],['⚖️','ન્યાય','દરેક Player નો એક ખોટા જવાબનો −1 માફ (Mode-1 માં +1 ભેટ)'],['🏃','ઝડપ','Mode ના સૌથી ઝડપી સાચા જવાબ આપનાર ને +3'],['🌪','તોફાન','સૌથી વધુ ખોટા જવાબ વાળા Zone ને −2'],['🪔','પ્રકાશ','કોઈ પણ 5 Players ને રેન્ડમ +3'],['🔥','અગ્નિ પરીક્ષા','સૌથી વધુ સાચા જવાબ વાળા Zone ને −2']];
-const SANK_PL=[[4,5],[6,10],[8,15]];
-function sankPick(n){ state.sankSel=n; socket.emit('player:sankalp',{code:state.code,name:state.name,pick:n}); render(); }
+const SANK_PL=[[4,5],[6,10],[8,15]], SANK_COL=[['#06b6d4','#2563eb'],['#8b5cf6','#d946ef'],['#f59e0b','#ef4444']];
+setInterval(()=>{ try{ const r=state.room; if(r&&r.mstage==='sankalp'&&r.sankEnd&&Date.now()<r.sankEnd+1200) render(); }catch(e){} },1000);
+function sankPick(n){ const r=state.room; if(!r||r.mySank||state.sankSelM===r.sankFor&&state.sankSel) return; state.sankSel=n; state.sankSelM=r.sankFor; socket.emit('player:sankalp',{code:state.code,name:state.name,pick:n}); render(); }
 const KSEEN={k:null,t:0};
 function mstageHTML(r){
-  if(r.mstage==='sankalp'){ const m=r.sankFor||1, my=state.sankSel!=null&&state.sankSelM===m?state.sankSel:(r.mySank||0);
-    return `<div class="card" style="text-align:center"><div style="font-size:2.4rem">🕉</div><b style="font-size:1.15rem">Mode-${m} નો સંકલ્પ</b><div class="muted" style="margin:6px 0">આ Mode માં હું કેટલા સાચા જવાબ આપીશ? Host બંધ કરે ત્યાં સુધી બદલી શકાય.</div>
-    <div style="display:flex;gap:8px;margin:10px 0">${SANK_PL.map(o=>`<button class="btn ${my===o[0]?'':'ghost'}" style="flex:1;padding:12px 4px" onclick="state.sankSelM=${m};sankPick(${o[0]})"><span style="font-size:1.6rem;font-weight:900">${o[0]}</span><br><small>સાચા · +${o[1]}</small></button>`).join('')}</div>
-    <div class="muted">${my?`🔒 તમારો સંકલ્પ: <b>${my}</b> સાચા જવાબ`:'⚠️ હજી સંકલ્પ લીધો નથી (લીધા વગર બોનસ નહિ)'}</div>
-    <div class="muted" style="margin-top:8px">🏛 તમારા Zone ના 75% કે વધુ Players સંકલ્પ પાળે તો આખા Zone ને +10 (પરિણામ છેલ્લે ખૂલશે)</div></div>`; }
+  if(r.mstage==='sankalp'){ const m=r.sankFor||1, left=Math.max(0,Math.ceil(((r.sankEnd||0)-Date.now())/1000)), my=(state.sankSelM===m&&state.sankSel)?state.sankSel:(r.mySank||0), closed=left<=0, pct=Math.round(left*100/60);
+    const btns=SANK_PL.map((o,i)=>{ const on=my===o[0], dis=!!my||closed, c=SANK_COL[i]; return `<button ${dis?'disabled':''} onclick="sankPick(${o[0]})" style="flex:1;border:0;border-radius:18px;padding:14px 4px;color:#fff;font:inherit;background:linear-gradient(145deg,${c[0]},${c[1]});box-shadow:${on?'0 0 0 4px #fff,0 0 0 7px '+c[1]+',0 10px 24px '+c[1]+'88':'0 8px 18px '+c[1]+'66'};opacity:${dis&&!on?.35:1};transform:${on?'scale(1.06)':'none'};transition:.2s"><span style="display:block;font-size:2.1rem;font-weight:900;line-height:1">${o[0]}</span><small style="display:block;font-weight:700;opacity:.95">સાચા જવાબ</small><b style="display:block;margin-top:4px;background:rgba(255,255,255,.25);border-radius:99px;padding:2px 0">+${o[1]}</b></button>`; }).join('');
+    return `<div class="card" style="text-align:center;background:linear-gradient(160deg,#1e1b4b,#4c1d95 55%,#9d174d);color:#fff;border:0;box-shadow:0 14px 34px rgba(76,29,149,.45)"><div style="font-size:.78rem;letter-spacing:.18em;font-weight:800;color:#fde68a">MODE-${m} · સંકલ્પ + ઝોન પ્રતિજ્ઞા</div><div style="font-size:1.25rem;font-weight:900;margin:6px 0 2px">આ Mode માં હું કેટલા સાચા જવાબ આપીશ?</div><div style="font-size:.82rem;opacity:.85">એક જ વાર પસંદ કરી શકાશે, પછી બદલાશે નહિ</div>
+    <div style="height:8px;border-radius:99px;background:rgba(255,255,255,.2);margin:12px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,#34d399,#fde047,#f87171);transition:width 1s linear"></i></div><div style="font-weight:900;color:${left<=10?'#fca5a5':'#fde68a'}">⏱ ${closed?'સમય પૂરો':left+' સેકન્ડ'}</div>
+    <div style="display:flex;gap:10px;margin:14px 0">${btns}</div>
+    <div style="font-weight:800;color:${my?'#86efac':'#fde68a'}">${my?`🔒 તમારો સંકલ્પ: ${my} સાચા જવાબ`:(closed?'⌛ તમે સંકલ્પ લીધો નથી (બોનસ નહિ)':'👆 એક પસંદ કરો')}</div>
+    <div style="margin-top:10px;font-size:.82rem;opacity:.9;background:rgba(255,255,255,.12);border-radius:12px;padding:8px">🏛 તમારા Zone ના 75% કે વધુ Players સંકલ્પ પાળે તો આખા Zone ને +10 <br>પરિણામ છેલ્લે Result માં ખૂલશે</div></div>`; }
   const m=r.chakraFor, ki=(r.karmaKeys||{})[m], has=ki!=null&&ki>=0;
   if(!has) return `<div class="card" style="text-align:center"><div style="font-size:2.4rem">🎡</div><b>Mode-${m} પૂરો!</b><div class="muted">Host કર્મ ચક્ર ફેરવશે… Projector સામે જુઓ.</div></div>`;
   const key=m+':'+r.karmaSpin; if(KSEEN.k!==key){KSEEN.k=key;KSEEN.t=Date.now();setTimeout(()=>{ try{render()}catch(e){} },5100);}
@@ -337,7 +340,7 @@ function mstageHTML(r){
 }
 function epiRows(res){   // [[label,value]] for the report card
   const rows=[]; const sg=n=>(n>0?'+':'')+n;
-  (res.sank||[]).forEach(x=>rows.push(['🕉 Mode-'+x.m+' સંકલ્પ '+x.pick+' → સાચા '+x.got+(x.met?' ✅':' ❌'),sg(x.pts)]));
+  (res.sank||[]).forEach(x=>rows.push(['🎯 Mode-'+x.m+' સંકલ્પ '+x.pick+' → સાચા '+x.got+(x.met?' ✅':' ❌'),sg(x.pts)]));
   (res.karmaP||[]).forEach(x=>{ const K=KARMA_PL[['ashirvad','nyay','zadap','toofan','prakash','agni'].indexOf(x.key)]; if(x.pts) rows.push(['🎡 Mode-'+x.m+' કર્મ: '+K[0]+' '+K[1],sg(x.pts)]); });
   return rows;
 }
@@ -980,7 +983,7 @@ function render(){
   let body=profileHdr(r,p)+modeBannerHTML(r)+zoneBattleHTML(r,p)+(typeof certBtn==='function'?certBtn(r):'');
   if(p.zone&&(r.zoneCard||r.myZone)){ const zs=zcStat(r,p); body+=`<button class="zbtn" onclick="zcToggle()"><span>🎴 Zone Card — ${esc(p.zone)}</span><span>🔒 ${zs.locked} · 📏 ${zs.lines} Line</span></button>`; }
   if(r.status==='revealed') body+=winnerBannerHTML(r)||`<div class="card muted">Host winners reveal કરવાના શરૂ કરે એની રાહ જુઓ…</div>`;
-  if((r.status==='lobby'||r.status==='active')&&!r.modeDone&&!r.mstage) body+=`<div class="card">Host ની રાહ જુઓ…<div style="margin-top:8px"><button class="btn ghost" onclick="pracOpen()">🧪 Practice કરો (3 નકલી પ્રશ્ન)</button></div></div>`;
+  if((r.status==='lobby'||r.status==='active')&&!r.modeDone&&!r.mstage) body+=`<div class="card">Host ની રાહ જુઓ…<div style="margin-top:8px"><button class="btn ghost" onclick="pracOpen()">🧪 Practice કરો (5 નકલી પ્રશ્ન)</button></div></div>`;
   if(r.status==='spinning') body+=`<div class="card"><div class="qtext">${r.draw!=='wheel'?'📖 સ્વામીની વાતો માંથી પ્રકાશ રૂપે વાત પ્રગટ થઈ રહી છે…':'🎡 Host Wheel Spin કરી રહ્યા છે...'}</div></div>`;
   if(r.status==='revealing') body+=`<div class="card numpop"><div class="lbl">${r.draw!=='wheel'?'📖 સ્વામીની વાત · પ્રશ્ન નંબર':'🎯 Question Number'}</div><div class="num">${r.curIdx+1}</div></div>`;
   if(r.status==='question'){

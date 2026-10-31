@@ -221,12 +221,15 @@ function zoneNeed(r, active, safe){
 }
 function closeTs(r, qi){ return (r.qClosedAt && r.qClosedAt[qi]) || r.lastSpinAt || Date.now(); }
 // When the LAST question of a Mode closes, the Mode is finished right away (no extra spin needed) -> host sees Sankalp / Karm Chakra at once
+function nextModeNo(r,from){ const has=x=>r.questions.some((q,i)=>(q.m||1)===x && !r.usedIdx.includes(i)); let m=from; while(m<=3 && !has(m)) m++; return m; }
+// Sequence: Sankalp(M1) -> Mode-1 -> Karm Chakra -> Sankalp(M2) -> Mode-2 -> Karm Chakra -> Sankalp(M3) -> Mode-3 -> Karm Chakra -> end
+function enterChakra(r){ const nx=nextModeNo(r,(r.mode||1)+1); r.modeDone=true; r.timerEnd=null; r.chakraFor=r.mode; r.lastMode=nx>3; r.sankFor=nx>3?null:nx; r.mstage='chakra'; }
 function modeFinishCheck(r){
   if (!r.mode || r.modeDone || r.mstage || r.status!=='locked' || !r.sank) return;
   const left = r.questions.some((q,i)=>(q.m||1)===r.mode && !r.usedIdx.includes(i)); if (left) return;
   if (!r.usedIdx.some(i=>(r.questions[i].m||1)===r.mode)) return;
   const more = [1,2,3].some(m=>m>r.mode && r.questions.some((q,i)=>(q.m||1)===m && !r.usedIdx.includes(i)));
-  r.modeDone=true; r.timerEnd=null; if(!more){ r.lastMode=true; r.mstage='chakra'; r.chakraFor=r.mode; }
+  enterChakra(r);
 }
 function lockQ(r){ if (r.curIdx!=null){ if(!r.qClosedAt) r.qClosedAt={}; r.qClosedAt[r.curIdx]=Date.now(); } r.status='locked'; r.timerEnd=null; try{ refreshZoneLocks(r); }catch(e){ console.error('zlock',e); } modeFinishCheck(r); }
 
@@ -674,7 +677,7 @@ io.on('connection', (socket) => {
     const avail=[]; for(let i=0;i<r.questions.length;i++) if(!r.usedIdx.includes(i) && (r.questions[i].m||1)===r.mode) avail.push(i);
     if (avail.length===0){
       const more = [1,2,3].some(m=>m>r.mode && r.questions.some((q,i)=>(q.m||1)===m && !r.usedIdx.includes(i)));
-      r.modeDone=true; r.status='locked'; r.timerEnd=null; if(!more){ r.lastMode=true; r.mstage='chakra'; r.chakraFor=r.mode; }   // Karm Chakra after every Mode (incl. the last)
+      r.status='locked'; enterChakra(r);   // Karm Chakra right after every Mode (incl. the last)
       broadcast(code); return;
     }
     const idx = avail[Math.floor(Math.random()*avail.length)];
@@ -718,15 +721,11 @@ io.on('connection', (socket) => {
   });
   // Epilogue modes: host starts the next mode (or jumps to a chosen one) after a mode is finished
   // Epilogue modes. After a Mode: (1) next Mode's Sankalp + Zone Pratigya, (2) Karm Chakra for the finished Mode, (3) next Mode starts.
-  function nextModeNo(r,from){ const has=x=>r.questions.some((q,i)=>(q.m||1)===x && !r.usedIdx.includes(i)); let m=from; while(m<=3 && !has(m)) m++; return m; }
   function beginMode(r,m){ r.mode=m; r.modeDone=false; r.status='active'; r.mstage=null; r.sankFor=null; r.chakraFor=null; r.modeStartAt=Date.now(); }
   socket.on('host:nextMode', ({code}, cb) => {
     const r = rooms[code]; if(!r) return;
     if (!r.modeDone || r.mstage){ cb&&cb({ok:false,error:'Mode હજી પૂરો નથી.'}); return; }
-    const m = nextModeNo(r,(r.mode||1)+1);
-    r.chakraFor = r.mode;
-    if (m>3){ r.mstage='chakra'; r.lastMode=true; } else { r.mstage='sankalp'; r.sankFor=m; r.sankEnd=Date.now()+SANK_SEC*1000; }
-    broadcast(code); cb&&cb({ok:true,mode:m});
+    enterChakra(r); broadcast(code); cb&&cb({ok:true});
   });
   socket.on('player:sankalp', ({code,name,pick}) => {
     seen(code,name); const r=rooms[code]; if(!r||r.mstage!=='sankalp'||!r.players[name]) return; pick=+pick; if(!SANK.includes(pick)) return;
@@ -736,7 +735,7 @@ io.on('connection', (socket) => {
   });
   socket.on('host:sankalpDone', ({code}) => {
     const r=rooms[code]; if(!r||r.mstage!=='sankalp') return;
-    if (r.chakraFor){ r.mstage='chakra'; broadcast(code); } else { beginMode(r,r.sankFor||1); broadcast(code); }
+    beginMode(r,r.sankFor||1); broadcast(code);
   });
   socket.on('host:spinKarma', ({code}, cb) => {
     const r=rooms[code]; if(!r||r.mstage!=='chakra'||!r.chakraFor) return; r.karma=r.karma||{};
@@ -748,7 +747,7 @@ io.on('connection', (socket) => {
   socket.on('host:karmaDone', ({code}) => {
     const r=rooms[code]; if(!r||r.mstage!=='chakra'||!(r.karma&&r.karma[r.chakraFor])) return;
     if (r.lastMode){ r.mstage=null; r.chakraFor=null; r.status='ended'; r.modeDone=false; broadcast(code); return; }
-    beginMode(r, r.sankFor||nextModeNo(r,(r.mode||1)+1)); broadcast(code);
+    r.mstage='sankalp'; r.sankEnd=Date.now()+SANK_SEC*1000; r.chakraFor=null; broadcast(code);
   });
   // add a question by hand (Lobby only: every Player's card is re-made so the new answer can be on it)
   socket.on('host:addQ', ({code,q,a,m,img,aud}, cb) => {

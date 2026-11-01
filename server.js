@@ -669,7 +669,7 @@ io.on('connection', (socket) => {
     broadcast(code);
   });
 
-  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); if(!r.sank){ r.sank={}; r.karma={}; r.qOpenAt={}; } r.mstage='sankalp'; r.sankFor=1; r.chakraFor=null; r.sank[1]=r.sank[1]||{}; r.sankEnd=Date.now()+SANK_SEC*1000; broadcast(code); });
+  socket.on('host:start', ({code}) => { const r=rooms[code]; if(!r) return; r.joinEnd=null; if(!r.botsPlay) for(const k of Object.keys(r.players)) if(r.players[k].bot) delete r.players[k]; r.status='active'; if(!r.startedAt) r.startedAt=Date.now(); if(!r.sank){ r.sank={}; r.karma={}; r.qOpenAt={}; } r.chakraFor=null; startIntro(r,code,1); });
 
   const REVEAL_MS=1600;       // how long the big number popup stays up before the question appears
   const SPIN_SAFETY_MS=9500;  // safety net only — if host's browser never confirms, auto-advance so the game can't get stuck
@@ -725,6 +725,11 @@ io.on('connection', (socket) => {
   });
   // Epilogue modes: host starts the next mode (or jumps to a chosen one) after a mode is finished
   // Epilogue modes. After a Mode: (1) next Mode's Sankalp + Zone Pratigya, (2) Karm Chakra for the finished Mode, (3) next Mode starts.
+  const INTRO_SEC=8.6;
+  function startIntro(r,code,m){ r.mstage='intro'; r.introFor=m; r.sankFor=m; r.introAt=Date.now(); r.introEnd=r.introAt+INTRO_SEC*1000; r.sank=r.sank||{}; r.sank[m]=r.sank[m]||{}; const at=r.introAt; broadcast(code);
+    setTimeout(()=>{ const rr=rooms[code]; if(rr&&rr.mstage==='intro'&&rr.introAt===at) introNext(rr,code); }, INTRO_SEC*1000+700); }
+  function introNext(r,code){ r.mstage='sankalp'; r.sankEnd=Date.now()+SANK_SEC*1000; r.sank=r.sank||{}; r.sank[r.sankFor]=r.sank[r.sankFor]||{}; broadcast(code); }
+  socket.on('host:introDone', ({code}) => { const r=rooms[code]; if(!r||r.mstage!=='intro') return; introNext(r,code); });
   function beginMode(r,m){ r.mode=m; r.modeDone=false; r.status='active'; r.mstage=null; r.sankFor=null; r.chakraFor=null; r.modeStartAt=Date.now(); }
   socket.on('host:nextMode', ({code}, cb) => {
     const r = rooms[code]; if(!r) return;
@@ -751,7 +756,7 @@ io.on('connection', (socket) => {
   socket.on('host:karmaDone', ({code}) => {
     const r=rooms[code]; if(!r||r.mstage!=='chakra'||!(r.karma&&r.karma[r.chakraFor])) return;
     if (r.lastMode){ r.mstage=null; r.chakraFor=null; r.status='ended'; r.modeDone=false; broadcast(code); return; }
-    r.mstage='sankalp'; r.sankEnd=Date.now()+SANK_SEC*1000; r.chakraFor=null; r.sank=r.sank||{}; r.sank[r.sankFor]=r.sank[r.sankFor]||{}; broadcast(code);
+    r.chakraFor=null; startIntro(r,code,r.sankFor||1);
   });
   // add a question by hand (Lobby only: every Player's card is re-made so the new answer can be on it)
   socket.on('host:addQ', ({code,q,a,m,img,aud}, cb) => {

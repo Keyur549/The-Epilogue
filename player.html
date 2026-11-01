@@ -338,6 +338,7 @@ setInterval(()=>{ try{ const r=state.room; if(r&&r.mstage==='sankalp'&&r.sankEnd
 function sankPick(n){ const r=state.room; if(!r||r.mySank||state.sankSelM===r.sankFor&&state.sankSel) return; state.sankSel=n; state.sankSelM=r.sankFor; socket.emit('player:sankalp',{code:state.code,name:state.name,pick:n}); render(); }
 const KSEEN={k:null,t:0};
 function mstageHTML(r){
+  if(r.mstage==='intro'){ const m=r.introFor||1; return `<div class="card" style="text-align:center;padding:34px 14px"><div style="font-size:2.4rem">🎬</div><div style="font-weight:900;font-size:1.2rem;margin-top:6px">Mode-${m} શરૂ થાય છે…</div><div class="muted" style="margin-top:6px">પછી તમારો સંકલ્પ લેવાનો છે</div></div>`; }
   if(r.mstage==='sankalp'){ const m=r.sankFor||1, left=Math.max(0,Math.ceil(((r.sankEnd||0)-Date.now())/1000)), my=(state.sankSelM===m&&state.sankSel)?state.sankSel:(r.mySank||0), closed=left<=0, pct=Math.round(left*100/60);
     const btns=SANK_PL.map((o,i)=>{ const on=my===o[0], dis=!!my||closed, c=SANK_COL[i]; return `<button ${dis?'disabled':''} onclick="sankPick(${o[0]})" style="flex:1;border:0;border-radius:18px;padding:14px 4px;color:#fff;font:inherit;background:linear-gradient(145deg,${c[0]},${c[1]});box-shadow:${on?'0 0 0 4px #fff,0 0 0 7px '+c[1]+',0 10px 24px '+c[1]+'88':'0 8px 18px '+c[1]+'66'};opacity:${dis&&!on?.35:1};transform:${on?'scale(1.06)':'none'};transition:.2s"><span style="display:block;font-size:2.1rem;font-weight:900;line-height:1">${o[0]}</span><small style="display:block;font-weight:700;opacity:.95">સાચા જવાબ</small><b style="display:block;margin-top:4px;background:rgba(255,255,255,.25);border-radius:99px;padding:2px 0">+${o[1]}</b><small style="display:block;margin-top:3px;font-weight:800">ન પાળો: ${o[2]}</small></button>`; }).join('');
     return `<div class="card" style="text-align:center;background:linear-gradient(160deg,#1e1b4b,#4c1d95 55%,#9d174d);color:#fff;border:0;box-shadow:0 14px 34px rgba(76,29,149,.45)"><div style="font-size:.78rem;letter-spacing:.18em;font-weight:800;color:#fde68a">MODE-${m} · સંકલ્પ + ઝોન પ્રતિજ્ઞા</div><div style="font-size:1.25rem;font-weight:900;margin:6px 0 2px">આ Mode માં હું કેટલા સાચા જવાબ આપીશ?</div><div style="font-size:.82rem;opacity:.85">એક જ વાર પસંદ કરી શકાશે, પછી બદલાશે નહિ</div>
@@ -412,9 +413,9 @@ function modeEmblem(m,u){
 }
 
 let PMI_KEY;
-setInterval(()=>{ try{ const r=state.room; if(!r) return; const k=(r.status==='active'&&!r.mstage&&r.modeStartAt)?r.mode+':'+r.modeStartAt:null;
+setInterval(()=>{ try{ const r=state.room; if(!r) return; const k=(r.status==='active'&&r.mstage==='intro'&&r.introAt)?r.introFor+':'+r.introAt:null;
   if(PMI_KEY===undefined){ PMI_KEY=k; return; }
-  if(k&&k!==PMI_KEY){ PMI_KEY=k; applyMN(r); const m=r.mode, I=MODE_INFO[m]; if(!I) return; const o=document.getElementById('pmi'); if(o) o.remove();
+  if(k&&k!==PMI_KEY){ PMI_KEY=k; applyMN(r); const m=r.introFor, I=MODE_INFO[m]; if(!I) return; const o=document.getElementById('pmi'); if(o) o.remove();
     const el=document.createElement('div'); el.id='pmi'; el.className='m'+m; el.innerHTML=`<div class="k">MODE</div><div class="n">${m}</div><div class="i">${modeEmblem(m,"pm")}</div><div class="t">${I.gu}</div><div class="e">${I.en}</div>`; document.body.appendChild(el); el.onclick=()=>el.remove(); setTimeout(()=>{ try{el.remove()}catch(e){} },5100); } }catch(e){} },400);
 const MODE_INFO={
  1:{ic:'🛡',gu:'સુદર્શન શીલ્ડ મોડ',en:'Sudharsan Shield Mode',rule:'ખોટા જવાબનો ➖ માર્ક નથી · કોઈ Life Line નથી · ⭐ છુપાયેલા'},

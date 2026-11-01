@@ -83,7 +83,7 @@ const WINNER_ORDER = ['line1','line2','line3','line4','line5','full','top3','top
 const WINNER_LABELS = {line1:'1 Line',line2:'2 Line',line3:'3 Line',line4:'4 Line',line5:'5 Line',full:'Full House',top3:'3rd Score',top2:'2nd Score',top1:'Overall Champion',zonefull:'Zone Full House',zone:'Zone Champion'};
 
 // Epilogue: 3 modes, 12 questions each. Questions without an explicit mode are split in order: first 12 = Mode 1, next 12 = Mode 2, the rest = Mode 3.
-const MODE_NAMES = {1:'Sudharsan Shield Mode', 2:'Divine Intervention Mode', 3:'Wager with Divine Blessing Mode'};
+const MODE_NAMES = {1:'Sudharsan Shield Mode', 2:'Mavtar Krupa Mode', 3:'Wager with Divine Blessing Mode'};
 const CARD_SPLIT = {1:8, 2:8, 3:9};                       // answers per mode on a 25-answer card
 const HID_SPEC = {1:{star:2}, 2:{star:2,bomb:2}, 3:{gem:1,star:2,bomb:2}};
 function assignModes(qs){

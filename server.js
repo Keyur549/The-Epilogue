@@ -726,7 +726,7 @@ io.on('connection', (socket) => {
   // Epilogue modes: host starts the next mode (or jumps to a chosen one) after a mode is finished
   // Epilogue modes. After a Mode: (1) next Mode's Sankalp + Zone Pratigya, (2) Karm Chakra for the finished Mode, (3) next Mode starts.
   const INTRO_SEC=8.6;
-  function startIntro(r,code,m){ r.mstage='intro'; r.introFor=m; r.sankFor=m; r.introAt=Date.now(); r.introEnd=r.introAt+INTRO_SEC*1000; r.sank=r.sank||{}; r.sank[m]=r.sank[m]||{}; const at=r.introAt; broadcast(code);
+  function startIntro(r,code,m){ r.status='active'; r.mstage='intro'; r.introFor=m; r.sankFor=m; r.introAt=Date.now(); r.introEnd=r.introAt+INTRO_SEC*1000; r.sank=r.sank||{}; r.sank[m]=r.sank[m]||{}; const at=r.introAt; broadcast(code);
     setTimeout(()=>{ const rr=rooms[code]; if(rr&&rr.mstage==='intro'&&rr.introAt===at) introNext(rr,code); }, INTRO_SEC*1000+700); }
   function introNext(r,code){ r.mstage='sankalp'; r.sankEnd=Date.now()+SANK_SEC*1000; r.sank=r.sank||{}; r.sank[r.sankFor]=r.sank[r.sankFor]||{}; broadcast(code); }
   socket.on('host:introDone', ({code}) => { const r=rooms[code]; if(!r||r.mstage!=='intro') return; introNext(r,code); });

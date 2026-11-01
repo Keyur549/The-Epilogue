@@ -421,12 +421,12 @@ function modeEmblem(m,u){
 }
 
 let PMI_KEY;
-setInterval(()=>{ try{ const r=state.room; if(!r) return; const k=(r.status==='active'&&r.mstage==='intro'&&r.introAt)?r.introFor+':'+r.introAt:null;
+setInterval(()=>{ try{ const r=state.room; if(!r) return; const k=(r.mstage==='intro'&&r.introAt)?r.introFor+':'+r.introAt:null;
   if(PMI_KEY===undefined){ PMI_KEY=k; return; }
   if(k&&k!==PMI_KEY){ PMI_KEY=k; applyMN(r); const m=r.introFor, I=MODE_INFO[m]; if(!I) return; const o=document.getElementById('pmi'); if(o) o.remove();
     const el=document.createElement('div'); el.id='pmi'; el.className='m'+m; el.innerHTML=`<div class="k">MODE</div><div class="n">${m}</div><div class="i">${modeEmblem(m,"pm")}</div><div class="t">${I.gu}</div><div class="e">${I.en}</div>`; document.body.appendChild(el); el.onclick=()=>el.remove(); setTimeout(()=>{ try{el.remove()}catch(e){} },5100); } }catch(e){} },400);
 const MODE_INFO={
- 1:{ic:'🛡',gu:'સુદર્શન શીલ્ડ મોડ',en:'Sudharsan Shield Mode',rule:'ખોટા જવાબનો ➖ માર્ક નથી · કોઈ Life Line નથી · ⭐ છુપાયેલા'},
+ 1:{ic:'🛡',gu:'સુદર્શન શીલ્ડ મોડ',en:'Sudharsan Shield Mode',rule:'ખોટા જવાબનો (−) નેગેટિવ માર્ક નથી · કોઈ Life Line નથી · ⭐ છુપાયેલા'},
  2:{ic:'✨',gu:'માવતર કૃપા મોડ',en:'Mavtar Krupa Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🤝 Zone Madad, 📣 Zone Pukar · ⭐💣 છુપાયેલા'},
  3:{ic:'🪙',gu:'દિવ્ય આશીર્વાદ દાવ મોડ',en:'Wager with Divine Blessing Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🔥 Bonus Streak, 🛡 Safety Net, ♻️ Recharge · 💎⭐💣 છુપાયેલા'}};
 function curMode(r){ const q=r.curIdx!=null&&(r.status==='question'||r.status==='locked'||r.status==='revealing'||r.status==='spinning')?r.questions[r.curIdx]:null; return (q&&q.m)||r.mode||1; }

@@ -2134,10 +2134,10 @@ function modeIntroShow(m){
   document.body.appendChild(el); MINTRO.until=Date.now()+8300; introMusic(m);
   const end=()=>{ clearTimeout(MINTRO.t); MINTRO.until=0; try{el.remove()}catch(e){} }; el.onclick=end; MINTRO.t=setTimeout(end,8300);
 }
-setInterval(()=>{ try{ const r=state&&state.room; if(!r) return; const k=(r.status==='active'&&r.mstage==='intro'&&r.introAt)?r.introFor+':'+r.introAt:null;
+setInterval(()=>{ try{ const r=state&&state.room; if(!r) return; const k=(r.mstage==='intro'&&r.introAt)?r.introFor+':'+r.introAt:null;
   if(MINTRO.key===undefined){ MINTRO.key=k; return; }            // first look at the room (page open / reload): never replay
   if(k&&k!==MINTRO.key){ MINTRO.key=k; const pj=document.getElementById('pj'); if(pj&&getComputedStyle(pj).display!=='none') modeIntroShow(r.introFor); } }catch(e){} },300);
-const MODE_GU={1:['🛡','સુદર્શન શીલ્ડ મોડ','Sudharsan Shield Mode','ખોટાનો ➖ નથી · Life Line નથી · ⭐ ×2'],2:['✨','માવતર કૃપા મોડ','Mavtar Krupa Mode','ખોટાનો −1 · 🤝 Zone Madad, 📣 Zone Pukar · ⭐×2 💣×2'],3:['🪙','દિવ્ય આશીર્વાદ દાવ મોડ','Wager with Divine Blessing Mode','ખોટાનો −1 · 🔥 Streak, 🛡 Safety, ♻️ Recharge · 💎 ⭐×2 💣×2']};
+const MODE_GU={1:['🛡','સુદર્શન શીલ્ડ મોડ','Sudharsan Shield Mode','ખોટા જવાબનો (−) નેગેટિવ માર્ક નથી · Life Line નથી · ⭐ ×2'],2:['✨','માવતર કૃપા મોડ','Mavtar Krupa Mode','ખોટાનો −1 · 🤝 Zone Madad, 📣 Zone Pukar · ⭐×2 💣×2'],3:['🪙','દિવ્ય આશીર્વાદ દાવ મોડ','Wager with Divine Blessing Mode','ખોટાનો −1 · 🔥 Streak, 🛡 Safety, ♻️ Recharge · 💎 ⭐×2 💣×2']};
 const MODE_DEF=JSON.parse(JSON.stringify(MODE_GU));
 function applyMN(r){ try{ const n=(r&&r.modeNames)||{}; [1,2,3].forEach(m=>{ const o=n[m]||{}; MODE_GU[m][1]=o.gu||MODE_DEF[m][1]; MODE_GU[m][2]=o.en||MODE_DEF[m][2]; }); }catch(e){} }
 function modeCounts(r){ const c={1:[0,0],2:[0,0],3:[0,0]}; (r.questions||[]).forEach((q,i)=>{ const m=q.m||1; c[m][1]++; if((r.usedIdx||[]).includes(i)) c[m][0]++; }); return c; }

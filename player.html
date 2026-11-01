@@ -162,7 +162,7 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 #pmi.m2{--c1:#d97706;--c2:#fde68a}#pmi.m3{--c1:#be123c;--c2:#fda4af}
 #pmi .k{letter-spacing:.9em;padding-left:.9em;font-weight:800;color:var(--c2);font-size:.8rem;opacity:0;animation:pmF .8s ease-out .2s both}
 #pmi .n{font-size:6.5rem;font-weight:900;line-height:1;background:linear-gradient(180deg,#fff,var(--c2) 60%,var(--c1));-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;animation:pmN .9s cubic-bezier(.12,.9,.2,1) .5s both}
-#pmi .i{width:150px;height:150px;opacity:0;animation:pmF .6s ease-out 1.3s both}
+#pmi .i{width:190px;height:165px;opacity:0;animation:pmF .6s ease-out 1.3s both}
 #pmi .t{font-size:1.7rem;font-weight:900;line-height:1.2;opacity:0;animation:pmF .9s ease-out 1.7s both}
 #pmi .e{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--c2);opacity:0;animation:pmF .8s ease-out 2.4s both}
 @keyframes pmF{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes pmN{from{opacity:0;transform:scale(2.2);filter:blur(14px)}to{opacity:1;transform:none;filter:blur(0)}}@keyframes pmO{to{opacity:0;visibility:hidden}}
@@ -387,7 +387,7 @@ function modeEmblem(m,u){
      +'<path d="M18 50 Q27 55 34 61" fill="none" stroke="#9a5f3a" stroke-opacity=".38" stroke-width=".8" stroke-linecap="round"/>'
      +(dot?'<circle cx="30" cy="52" r="2.6" fill="#c81e1e" stroke="#7f1d1d" stroke-width=".5"/>':'')+'</g>'; };
   if(m===2||m===3){ const id=u+'c', coin=(m===3)?'<g><circle cx="104" cy="100" r="14" fill="url(#'+u+'g)" stroke="#7c4a03" stroke-width="1.6"/><circle cx="104" cy="100" r="10.5" fill="none" stroke="#b45309" stroke-width="1"/><path d="M104 92 l2.4 5 5.4 .7 -4 3.8 1 5.4 -4.8 -2.7 -4.8 2.7 1 -5.4 -4 -3.8 5.4 -.7z" fill="#fff6c8" stroke="#b45309" stroke-width=".7"/></g>':'';
-    return '<svg class="emb" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+defs+'<clipPath id="'+id+'"><rect x="8" y="16" width="104" height="88" rx="12"/></clipPath><circle cx="60" cy="60" r="56" fill="url(#'+u+'r)" class="emb-glow"/><rect x="5" y="13" width="110" height="94" rx="15" fill="'+g+'"/><image href="'+EMB_IMG[m]+'" x="8" y="16" width="104" height="88" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><rect x="8" y="16" width="104" height="88" rx="12" fill="none" stroke="rgba(255,255,255,.45)" stroke-width=".8"/>'+coin+'</svg>'; }
+    return '<svg class="emb" viewBox="0 8 120 104" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+defs+'<clipPath id="'+id+'"><rect x="8" y="16" width="104" height="88" rx="12"/></clipPath><circle cx="60" cy="60" r="56" fill="url(#'+u+'r)" class="emb-glow"/><rect x="5" y="13" width="110" height="94" rx="15" fill="'+g+'"/><image href="'+EMB_IMG[m]+'" x="8" y="16" width="104" height="88" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/><rect x="8" y="16" width="104" height="88" rx="12" fill="none" stroke="rgba(255,255,255,.45)" stroke-width=".8"/>'+coin+'</svg>'; }
   const S='stroke="#7c4a03" stroke-width="1.2" stroke-linejoin="round"';
   let b='';
   if(m===1){

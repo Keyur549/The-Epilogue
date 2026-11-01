@@ -2640,7 +2640,7 @@ function render(){
     <button class="btn ghost" onclick="copyRoomCode()">🔗 Room Code Copy કરો</button>
     <button class="btn ghost" onclick="downloadBackup()">💾 Backup File Download</button>
     <div class="muted">Players Joined</div><div class="code">${Object.keys(r.players).length}${r.maxPlayers?' / '+r.maxPlayers:''}</div>
-    <div class="row">${Object.keys(r.players).map(n=>`<span class="pill">${r.players[n].avatar||''} ${esc(n)}${r.players[n].zone?' · '+esc(r.players[n].zone):''}</span>`).join('')||'<span class="muted">કોઈ player joined નથી</span>'}</div>
+    <div class="row">${(()=>{ const ks=Object.keys(r.players), cap=80; return ks.slice(-cap).map(n=>`<span class="pill">${r.players[n].avatar||''} ${esc(n)}${r.players[n].zone?' · '+esc(r.players[n].zone):''}</span>`).join('')+(ks.length>cap?`<span class="muted"> …અને બીજા ${ks.length-cap} Players (છેલ્લા ${cap} દેખાય છે)</span>`:''); })()||'<span class="muted">કોઈ player joined નથી</span>'}</div>
   </div>`;
   if(!spinning) wheelLayout=computeLayout(r);
   if(r.status==='lobby') body+=`<div class="card">${addQHTML(r)}${drawPickHTML(r)}${zoneSetHTML(r)}<button class="btn" onclick="hostStart()">▶ Start Game</button></div>`;

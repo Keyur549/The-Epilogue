@@ -401,10 +401,12 @@ function pubPlayer(room, p, own){
 }
 function cleanMN(n){ const o={}; if(!n||typeof n!=='object') return o; for(const k of ['1','2','3']){ const v=n[k]; if(!v||typeof v!=='object') continue; const gu=String(v.gu||'').trim().slice(0,40), en=String(v.en||'').trim().slice(0,50); if(gu||en) o[k]={gu,en}; } return o; }
 function mstageInfo(room){ const kk={}; for(const [m,k] of Object.entries(room.karma||{})) kk[m]=KARMA.indexOf(k.key); const sn=room.sankFor&&room.sank&&room.sank[room.sankFor]?Object.keys(room.sank[room.sankFor]).length:0; return {sankN:sn, karmaKeys:kk}; }
+const LITE_N = 100;
 function publicRoom(room){
   if (room.status==='revealed') return {...room, ...mstageInfo(room), cert:undefined};
   const players = {};
-  for (const [n,p] of Object.entries(room.players)) players[n] = pubPlayer(room,p,false);
+  const lite = Object.keys(room.players).length > LITE_N;   // big game: the Host does not need every player's 25-cell card while playing
+  for (const [n,p] of Object.entries(room.players)){ const o = pubPlayer(room,p,false); if (lite) delete o.card; players[n] = o; }
   return {...room, ...mstageInfo(room), cert:undefined, questions: room.questions.map(q=>({q:q.q, img:q.img, aud:q.aud, m:q.m||1})), players};
 }
 // ---- 500-player friendly state: a PLAYER only receives his own data (+ the few winners after the reveal).
@@ -442,7 +444,8 @@ function slimFor(room, S, name){
 const bkTimers = {};
 function scheduleBackup(code){
   if (bkTimers[code]) return;
-  bkTimers[code] = setTimeout(()=>{ delete bkTimers[code]; if (rooms[code]) io.to(code+'#h').emit('backup', rooms[code]); }, 4000);
+  const big = rooms[code] && Object.keys(rooms[code].players||{}).length > 150;
+  bkTimers[code] = setTimeout(()=>{ delete bkTimers[code]; if (rooms[code]) io.to(code+'#h').emit('backup', rooms[code]); }, big ? 20000 : 4000);
 }
 function broadcast(code){
   const r = rooms[code]; if(!r) return;

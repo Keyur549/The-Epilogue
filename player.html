@@ -171,6 +171,7 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .emb-spin{transform-box:fill-box;transform-origin:center;animation:embSpin 14s linear infinite}@keyframes embSpin{to{transform:rotate(360deg)}}
 .emb-glow{animation:embGlow 2.2s ease-in-out infinite alternate}@keyframes embGlow{from{opacity:.45}to{opacity:1}}
 .emb-tumble{transform-box:fill-box;transform-origin:center;animation:embTumble 3.6s ease-in-out infinite}@keyframes embTumble{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(10deg) translateY(-2px)}}
+@keyframes kwspin{from{transform:rotate(0)}to{transform:rotate(var(--rot))}}@keyframes kwSlow{to{transform:rotate(360deg)}}@keyframes kwGlow{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.08)}}@keyframes kwPop{from{opacity:0;transform:scale(.2) rotate(-30deg)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -347,11 +348,18 @@ function mstageHTML(r){
     <div style="font-weight:800;color:${my?'#86efac':'#fde68a'}">${my?`🔒 તમારો સંકલ્પ: ${my} સાચા જવાબ`:(closed?'⌛ તમે સંકલ્પ લીધો નથી (−2 સજા)':'👆 એક પસંદ કરો')}</div>
     <div style="margin-top:10px;font-size:.82rem;opacity:.9;background:rgba(255,255,255,.12);border-radius:12px;padding:8px">🏛 તમારા Zone ના 70% કે વધુ Players સંકલ્પ પાળે તો આખા Zone ને +10, ઓછા પાળે તો Zone ના દરેકને −10<br>⚠️ સંકલ્પ ન લો તો સૌથી નાના સંકલ્પ (4) ની સજા −2<br>પરિણામ છેલ્લે Result માં ખૂલશે</div></div>`; }
   const m=r.chakraFor, ki=(r.karmaKeys||{})[m], has=ki!=null&&ki>=0;
-  if(!has) return `<div class="card" style="text-align:center"><div style="font-size:2.4rem">🎡</div><b>Mode-${m} પૂરો!</b><div class="muted">Host કર્મ ચક્ર ફેરવશે… Projector સામે જુઓ.</div></div>`;
+  const COL=['#16a34a','#0ea5e9','#7c3aed','#64748b','#dc2626','#f59e0b'], seg=360/6, nK=6;
+  const conic='conic-gradient('+COL.map((c,i)=>c+' '+(i*seg)+'deg '+((i+1)*seg)+'deg').join(',')+')';
+  const labs=KARMA_PL.map((k,i)=>{ const a=(i+.5)*seg*Math.PI/180, R=34; return '<div style="position:absolute;left:'+(50+Math.sin(a)*R)+'%;top:'+(50-Math.cos(a)*R)+'%;transform:translate(-50%,-50%);font-size:1.9rem;text-shadow:0 2px 4px rgba(0,0,0,.4)">'+k[0]+'</div>'; }).join('');
+  const wheel=(sty)=>`<div style="position:relative;width:min(76vw,300px);aspect-ratio:1;margin:22px auto 10px"><div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:2rem;z-index:3;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))">▼</div><div style="position:absolute;inset:0;border-radius:50%;border:6px solid #fff;box-shadow:0 0 0 4px #fbbf24,0 0 38px rgba(251,191,36,.65),inset 0 0 24px rgba(0,0,0,.35);background:${conic};${sty}">${labs}</div><div style="position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e9d5ff);display:grid;place-items:center;font-size:1.6rem;z-index:2;box-shadow:0 0 0 4px #7c3aed,0 4px 12px rgba(0,0,0,.4)">🎡</div></div>`;
+  const shell=(inner,bg)=>`<div class="card" style="text-align:center;border:0;color:#fff;background:${bg||'radial-gradient(600px 420px at 50% 28%,#5b21b6,#1e1b4b 70%,#0b0720)'};box-shadow:0 14px 34px rgba(76,29,149,.5);overflow:hidden">${inner}</div>`;
+  const head=`<div style="font-size:.78rem;letter-spacing:.22em;font-weight:800;color:#fde68a">MODE-${m} પૂરો · કર્મ ચક્ર</div>`;
+  if(!has) return shell(head+wheel('animation:kwSlow 14s linear infinite')+`<div style="font-weight:900;font-size:1.15rem">🎡 કર્મ ચક્ર ફરવાનું છે…</div><div style="opacity:.85;font-size:.85rem;margin-top:4px">Projector સામે જુઓ</div>`);
   const key=m+':'+r.karmaSpin; if(KSEEN.k!==key){KSEEN.k=key;KSEEN.t=Date.now();setTimeout(()=>{ try{render()}catch(e){} },5100);}
-  if(Date.now()-KSEEN.t<5000) return `<div class="card" style="text-align:center"><div style="font-size:2.4rem">🎡</div><b>ચક્ર ફરે છે…</b><div class="muted">Projector સામે જુઓ</div></div>`;
-  const K=KARMA_PL[ki];
-  return `<div class="card" style="text-align:center"><div style="font-size:3rem">${K[0]}</div><b style="font-size:1.2rem">કર્મ: ${K[1]}</b><div class="muted" style="margin:6px 0">${K[2]}</div><div class="muted">🔒 તમને કેટલું મળ્યું તે છેલ્લે Result માં ખૂલશે.</div></div>`;
+  const age=Date.now()-KSEEN.t, rot=360*6+(360-(ki+.5)*seg);
+  if(age<5000) return shell(head+wheel('--rot:'+rot+'deg;animation:kwspin 4.6s cubic-bezier(.12,.7,.15,1) -'+(age/1000).toFixed(2)+'s both')+`<div style="font-weight:900;font-size:1.15rem">ચક્ર ફરે છે…</div><div style="opacity:.85;font-size:.85rem;margin-top:4px">તમારું કર્મ કયું આવશે?</div>`);
+  const K=KARMA_PL[ki], c=COL[ki];
+  return shell(head+`<div style="position:relative;margin:18px 0 8px"><div style="position:absolute;left:50%;top:50%;width:230px;height:230px;margin:-115px;border-radius:50%;background:radial-gradient(circle,${c}aa,transparent 68%);animation:kwGlow 1.8s ease-in-out infinite alternate"></div><div style="position:relative;font-size:5.2rem;line-height:1.1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));animation:kwPop .7s cubic-bezier(.3,1.6,.4,1) both">${K[0]}</div></div><div style="font-size:1.6rem;font-weight:900;background:linear-gradient(180deg,#fff,#fde68a);-webkit-background-clip:text;background-clip:text;color:transparent">કર્મ: ${K[1]}</div><div style="margin:12px 4px 4px;padding:12px;border-radius:16px;background:rgba(255,255,255,.14);border:1.5px solid ${c};font-weight:700;font-size:.95rem">${K[2]}</div><div style="opacity:.8;font-size:.8rem;margin-top:10px">🔒 તમને કેટલું મળ્યું તે છેલ્લે Result માં ખૂલશે.</div>`,'radial-gradient(520px 380px at 50% 22%,'+c+',#1e1b4b 62%,#0b0720)');
 }
 function epiRows(res){   // [[label,value]] for the report card
   const rows=[]; const sg=n=>(n>0?'+':'')+n;

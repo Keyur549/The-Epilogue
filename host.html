@@ -2685,12 +2685,14 @@ function render(){
     body+=zoneTableHTML(r);
     body+=`<div class="card overflow"><h2>Player Results</h2><div class="muted">Final = Personal (સાચા − ખોટા, 💎+10 ⭐+3 💣−2) + 🎴 Zone Bonus</div><table class="stbl">
     <tr><th align="left">Player</th><th>✅</th><th>❌</th><th>💎</th><th>⭐</th><th>💣</th><th>Personal</th><th>Zone +</th><th>Final</th><th>Lines</th><th>Full</th></tr>
-    ${Object.keys(r.players).map(n=>({n,res:playerResults(r,n)})).sort((a,b)=>b.res.netScore-a.res.netScore).map(({n,res})=>{
+    ${Object.keys(r.players).map(n=>({n,res:playerResults(r,n)})).sort((a,b)=>b.res.netScore-a.res.netScore).slice(0,TOPN).map(({n,res})=>{
     return `<tr><td>${esc(n)}</td><td align="center">${res.correctCount}</td><td align="center">${res.wrongCount}</td><td align="center">${res.gems}</td><td align="center">${res.stars}</td><td align="center">${res.bombs}</td><td align="center">${res.personal}</td><td align="center">+${res.zoneBonus}</td><td align="center" style="color:${res.netScore<0?'#dc2626':'#16a34a'};font-weight:700">${res.netScore}</td><td align="center">${res.correctRows}</td><td align="center">${res.fullHouse?'✔':'—'}</td></tr>`;}).join('')}
-    </table></div>`;
+    </table>${Object.keys(r.players).length>TOPN?`<div class="muted">Top ${TOPN} દેખાય છે · કુલ ${Object.keys(r.players).length} Players (બાકીના Results Export/Certificate માં છે)</div>`:''}</div>`;
   }
   el.innerHTML=body;
 }
+/* big-game cap for on-screen tables */
+var TOPN=100;
 setInterval(()=>{ if(state.room && state.room.status==='question' && !spinning) render(); },1000);
 render();
 if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())); caches && caches.keys && caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))); }

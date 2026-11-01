@@ -137,7 +137,8 @@ function randCode(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='GYAN'; f
 const rooms = {}; // code -> room object
 
 // ---------- Epilogue: hidden cells, Life Lines, Zone card ----------
-const LIFE_KEYS = ['safety','madad','change','streak','recharge'];
+const LIFE_KEYS = ['safety','madad','pukar','streak','recharge'];
+const PUKAR_MAX = 5;   // Zone Pukar: first 5 zone-mates (who already answered) may help
 // 🎁 Mystery Questions (secret until Reveal) and 🗳 Zone Vote questions
 const MYSTERY_N = 3, VOTE_N = 2, VOTE_PTS = 3;
 function pickQs(total, n, avoid){ const a=[]; for(let i=0;i<total;i++) if(!avoid.includes(i)) a.push(i); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a.slice(0,Math.min(n,Math.max(0,a.length-1))); }
@@ -189,7 +190,7 @@ function streakStarts(p){ return [...((p.lifeOld&&p.lifeOld.streak)||[]), ...(p.
 // the Bonus Streak covers the question it was started on + the next 2 asked questions; returns null while it is not finished
 function streakWindow(room, sq){ const seq = room.usedIdx||[]; const pos = seq.indexOf(sq); if (pos<0 || pos+STREAK_LEN>seq.length) return null; return seq.slice(pos,pos+STREAK_LEN); }
 // Mode-3 Recharge: the Player's earlier Mode-2 use of that line is archived and the line becomes usable once more
-function rcTake(p, life){ if (p.lives[life]!=null){ if(!p.lifeOld) p.lifeOld={}; (p.lifeOld[life]=p.lifeOld[life]||[]).push(p.lives[life]); delete p.lives[life]; if(life==='change') p.changed=false; } p.rcOpen=false; }
+function rcTake(p, life){ if (p.lives[life]!=null){ if(!p.lifeOld) p.lifeOld={}; (p.lifeOld[life]=p.lifeOld[life]||[]).push(p.lives[life]); delete p.lives[life]; } p.rcOpen=false; }
 function markCell(p, qi){ const k = Object.keys(p.marks).find(k=>p.marks[k]===qi); return k===undefined ? undefined : +k; }
 function answerOnCard(room, p, qi){ const q = room.questions[qi]; return !!(q && q.a!==undefined && p.card.includes(q.a)); }
 // hidden cells per mode: Mode 1 = 2 stars; Mode 2 = 2 stars + 2 bombs; Mode 3 = 1 diamond jackpot + 2 stars + 2 bombs
@@ -324,10 +325,11 @@ function playerResults(room, pname){
   for(const [ms,picks] of Object.entries(room.sank||{})){ const m=+ms; if(!modeComplete(room,m)) continue; let pick=picks[pname], auto=false; if(!pick){ pick=SANK[0]; auto=true; } const got=modeStats(room,m)[pname].cor, met=!auto&&got>=pick, i=SANK.indexOf(pick), pts=met?SANK_PTS[i]:SANK_PEN[i]; sankPts+=pts; sank.push({m,pick,got,met,pts,auto}); }
   const zk=zkey(p), prat=[]; for(const [ms,zs] of Object.entries(SS)){ const z=zs[zk]; if(z){ const pts=z.ok?PRAT_PTS:PRAT_PEN; zonePrat+=pts; prat.push({m:+ms,met:z.met,count:z.count,pct:Math.round(z.pct*100),ok:z.ok,pts}); } }
   const karmaP=(KF.p[pname]||[]).slice(), karmaZ=(KF.z[zk]||[]).slice(); const karmaPts=karmaP.reduce((a,x)=>a+x.pts,0), karmaZPts=karmaZ.reduce((a,x)=>a+x.pts,0);
-  const personal = base + hiddenPts + streakPts + mysteryPts + sankPts + karmaPts;
+  const pukarRows=[]; let pukarPts=0; for(const E of Object.values(room.pukar||{})){ if(E.helpers[pname]===undefined) continue; const q=room.questions[E.qi], ci=markCell(p,E.qi), right=!!(q&&ci!==undefined&&p.card[ci]===q.a), pts=1+(right?1:0); pukarPts+=pts; pukarRows.push({qi:E.qi,asker:E.asker,right,pts}); }
+  const personal = base + hiddenPts + streakPts + mysteryPts + sankPts + karmaPts + pukarPts;
   const zi = room.zoneInfo && room.zoneInfo[zkey(p)];
   const zoneBonus = (zi ? zi.bonus : 0) + zonePrat + karmaZPts;
-  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, mysteryPts, mysteryQs, gems, stars, bombs, sank, sankPts, prat, zonePrat, karmaP, karmaZ, karmaPts, karmaZPts, personal, zoneBonus, netScore: personal+zoneBonus };
+  return { cellState, pts, fx, correctRows, correctCount, wrongCount, fullHouse, base, hiddenPts, streakPts, mysteryPts, mysteryQs, gems, stars, bombs, sank, sankPts, pukarRows, pukarPts, prat, zonePrat, karmaP, karmaZ, karmaPts, karmaZPts, personal, zoneBonus, netScore: personal+zoneBonus };
 }
 function computeAll(r){
   r.zoneInfo = zoneCompute(r, true);
@@ -348,7 +350,7 @@ function computeAll(r){
     for (const p of Object.values(r.players)){ const ci=markCell(p,qi); if(ci===undefined) none++; else if(p.card[ci]===q.a) c++; else w++; }
     return {qi, m:q.m||1, correct:c, wrong:w, none, pct: Math.round(c*100/Math.max(1,c+w+none))};
   });
-  const LS = {safety:0,madad:0,change:0,streak:0,recharge:0};
+  const LS = {safety:0,madad:0,pukar:0,streak:0,recharge:0};
   for (const p of Object.values(r.players)) for (const k of LIFE_KEYS) LS[k] += ((p.lives && p.lives[k]!=null)?1:0) + ((p.lifeOld&&p.lifeOld[k])?p.lifeOld[k].length:0);
   r.lifeStats = LS;
   const HS = {gemHit:0, gemTotal:0, starHit:0, starTotal:0, bombHit:0, bombTotal:0};
@@ -394,7 +396,7 @@ function pubPlayer(room, p, own){
   const claims = {};
   for (const [k,c] of Object.entries(p.claims||{})) claims[k] = {ts:(c.shownTs||c.ts), marks:c.marks};
   const o = {...p, claims}; delete o.hid; delete o._c; delete o.cm;
-  if (!own){ delete o._ak; delete o._md; delete o._f; }
+  if (!own){ delete o._ak; delete o._md; delete o._pk; delete o._f; }
   return o;
 }
 function cleanMN(n){ const o={}; if(!n||typeof n!=='object') return o; for(const k of ['1','2','3']){ const v=n[k]; if(!v||typeof v!=='object') continue; const gu=String(v.gu||'').trim().slice(0,40), en=String(v.en||'').trim().slice(0,50); if(gu||en) o[k]={gu,en}; } return o; }
@@ -412,7 +414,7 @@ function zoneSummary(room){
 }
 function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='question'||room.status==='locked'); for(const p of Object.values(room.players||{})){ const z=String((p&&p.zone)||'').trim(); if(!z) continue; const k=z.toLowerCase(); const o=m[k]||(m[k]={z,i:Object.keys(m).length,n:0,a:0,l:0}); o.n++; if(live&&q!=null&&Object.values(p.marks||{}).includes(q)) o.a++; } if(room.zlock) for(const k in m){ const zl=room.zlock[k]; if(zl&&zl.locks) m[k].l=zl.locks.reduce((s,x)=>s+(x?1:0),0); } return Object.values(m).slice(0,40); }
 function slimBase(room){
-  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, sank, karma, qOpenAt, ...rest } = room;
+  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, sank, karma, qOpenAt, pukar, ...rest } = room;
   const n = Object.keys(players).length;
   if (room.status==='revealed'){
     const keep = {};
@@ -426,6 +428,7 @@ function slimFor(room, S, name){
   const players = {...S.keep}; const out = {...S.base, players};
   const p = name && room.players[name];
   if (p && room.sankFor && room.sank && room.sank[room.sankFor]) out.mySank = room.sank[room.sankFor][name]||0;
+  if (p && room.pukar && room.status==='question'){ const pk=zkey(p), asks=[]; for(const E of Object.values(room.pukar)){ if(E.qi!==room.curIdx||E.zk!==pk||E.asker===name) continue; if(markCell(p,room.curIdx)===undefined) continue; const cnt=Object.keys(E.helpers).length; asks.push({asker:E.asker, left:Math.max(0,PUKAR_MAX-cnt), helped:E.helpers[name]!==undefined}); } if(asks.length) out.pukarAsks=asks; }
   { const zi=(S.zi||(S.zi=zoneListOf(room))); const pz=p?String(p.zone||'').trim().toLowerCase():''; out.zoneIdx=(pz in zi)?zi[pz]:null; }
   if (p){
     const k = zkey(p);
@@ -638,8 +641,8 @@ io.on('connection', (socket) => {
     for (const p of Object.values(r.players)){
       for (const ci of Object.keys(p.marks)) if (p.marks[ci]===idx) delete p.marks[ci];
       if (p.markTs) delete p.markTs[idx];
-      if (p.lives) for (const k of LIFE_KEYS) if (p.lives[k]===idx){ delete p.lives[k]; if(k==='change') p.changed=false; }
-      if (p._ak && p._ak.qi===idx) delete p._ak; if (p._md && p._md.qi===idx) delete p._md; if (p._f && p._f.qi===idx) delete p._f;
+      if (p.lives) for (const k of LIFE_KEYS) if (p.lives[k]===idx){ delete p.lives[k]; }
+      if (p._ak && p._ak.qi===idx) delete p._ak; if (p._md && p._md.qi===idx) delete p._md; if (p._pk && p._pk.qi===idx) delete p._pk; if (r.pukar) for (const k of Object.keys(r.pukar)) if (r.pukar[k].qi===idx) delete r.pukar[k]; if (p._f && p._f.qi===idx) delete p._f;
     }
     if (r.qClosedAt) delete r.qClosedAt[idx];
     try{ refreshZoneLocks(r); }catch(e){}
@@ -879,10 +882,7 @@ io.on('connection', (socket) => {
     const old = markCell(p, r.curIdx);
     if (old!==undefined){
       // already answered: only allowed once, and only after 🔄 Change Answer was switched on for THIS question
-      if (!(p.lives.change===r.curIdx && !p.changed)) return;
-      if (old===ci || p.marks[ci]!==undefined) return;
-      delete p.marks[old]; p.marks[ci] = r.curIdx; p.markTs[r.curIdx] = Date.now(); p.changed = true;
-      touch(socket,code,name); return;
+      return;                                                  // one answer only (🔄 Change was replaced by 📣 Zone Pukar)
     }
     if (p.marks[ci]!==undefined) return;
     p.marks[ci] = r.curIdx; p.markTs[r.curIdx] = Date.now();
@@ -900,13 +900,13 @@ io.on('connection', (socket) => {
     if(!p.lives) p.lives = {};
     const cur = r.curIdx, q = r.questions[cur]; const qm = (q&&q.m)||1;
     if (qm===1) return fail('🛡 Mode-1 માં કોઈ Life Line નથી.');
-    if (qm===2 && !['madad','change'].includes(life)) return fail('Mode-2 માં ફક્ત 🤝 Zone Madad અને 🔄 Change વાપરી શકાય.');
-    if (qm===3 && ['madad','change'].includes(life)){
-      // Mode-3: Madad / Change only after ♻️ Recharge (one of the two Mode-2 lines, once per Recharge)
-      if (!p.rcOpen) return fail('Mode-3 માં 🤝/🔄 વાપરવા માટે પહેલા ♻️ Recharge વાપરો.');
+    if (qm===2 && !['madad','pukar'].includes(life)) return fail('Mode-2 માં ફક્ત 🤝 Zone Madad અને 📣 Zone Pukar વાપરી શકાય.');
+    if (qm===3 && ['madad','pukar'].includes(life)){
+      // Mode-3: Madad / Pukar only after ♻️ Recharge (one of the two Mode-2 lines, once per Recharge)
+      if (!p.rcOpen) return fail('Mode-3 માં 🤝/📣 વાપરવા માટે પહેલા ♻️ Recharge વાપરો.');
     }
-    if (p.lives[life]!=null && !(qm===3 && p.rcOpen && ['madad','change'].includes(life))) return fail('આ Life Line તમે પહેલેથી વાપરી લીધી છે.');
-    if (life!=='change' && LIFE_KEYS.some(k=>k!=='change' && p.lives[k]===cur)) return fail('આ પ્રશ્નમાં એક Life Line વપરાઈ ગઈ છે. એક પ્રશ્નમાં ફક્ત એક (🔄 Change સિવાય).');
+    if (p.lives[life]!=null && !(qm===3 && p.rcOpen && ['madad','pukar'].includes(life))) return fail('આ Life Line તમે પહેલેથી વાપરી લીધી છે.');
+    if (LIFE_KEYS.some(k=>p.lives[k]===cur)) return fail('આ પ્રશ્નમાં એક Life Line વપરાઈ ગઈ છે. એક પ્રશ્નમાં ફક્ત એક.');
     if (life==='streak'){
       if (r.questions.filter((x,i)=>(x.m||1)===3 && !(r.usedIdx||[]).includes(i)).length < STREAK_LEN-1) return fail('Bonus Streak માટે હવે પૂરતા પ્રશ્નો બાકી નથી.');
       p.lives.streak = cur; touch(socket,code,name); return cb && cb({ok:true});
@@ -916,10 +916,14 @@ io.on('connection', (socket) => {
       p.lives.recharge = cur; p.rcOpen = true; touch(socket,code,name); return cb && cb({ok:true, rc:'open'});
     }
     const zk = zkey(p);
-    if (life==='change'){
-      if (markCell(p,cur)===undefined) return fail('પહેલા એક ખાનું દબાવો, પછી 🔄 Change વાપરો.');
-      if (qm===3){ rcTake(p,'change'); }
-      p.lives.change = cur; p.changed = false; touch(socket,code,name); return cb && cb({ok:true});
+    if (life==='pukar'){
+      if (!zk) return fail('Zone વગર Zone Pukar ન વપરાય.');
+      if (markCell(p,cur)!==undefined) return fail('જવાબ આપી દીધા પછી Zone Pukar કામનો નથી. પહેલા Pukar કરો, પછી જવાબ આપો.');
+      if (!Object.values(r.players).some(o=>o!==p && zkey(o)===zk)) return fail('તમારા Zone માં બીજું કોઈ નથી.');
+      if (qm===3){ rcTake(p,'pukar'); }
+      p.lives.pukar = cur; p._pk = {qi:cur, list:[], n:0};
+      r.pukar = r.pukar||{}; r.pukar[name+'|'+cur] = {asker:name, zk, qi:cur, helpers:{}};
+      broadcast(code); return cb && cb({ok:true});
     }
     if (life==='madad'){
       if (!zk) return fail('Zone વગર Zone Madad ન વપરાય.');
@@ -936,6 +940,22 @@ io.on('connection', (socket) => {
     }
     if (life==='safety'){ p.lives.safety = cur; touch(socket,code,name); return cb && cb({ok:true}); }   // 🛡 Safety Net: lowers the Zone's lock limit for THIS question (never stacks)
     if (!answerOnCard(r,p,cur)) return fail('આ પ્રશ્નનો જવાબ તમારા Card માં નથી. Life Line વપરાઈ નથી.');
+  });
+
+  // 📣 Zone Pukar: a zone-mate who ALREADY answered this question helps (first PUKAR_MAX only)
+  socket.on('player:pukarHelp', ({code,name,asker}, cb) => {
+    seen(code,name); const fail=m=>cb&&cb({ok:false,error:m});
+    const r=rooms[code]; if(!r||r.status!=='question'||r.paused) return fail('હમણાં મદદ કરી શકાય નહિ.');
+    if (r.timerEnd && Date.now()>r.timerEnd+300) return fail('સમય પૂરો થઈ ગયો.');
+    const o=r.players[name], a=r.players[asker], E=r.pukar&&r.pukar[asker+'|'+r.curIdx]; if(!o||!a||!E) return fail('આ પુકાર હવે નથી.');
+    if (name===asker || zkey(o)!==E.zk) return fail('તમારા Zone નો પુકાર નથી.');
+    const ci=markCell(o,r.curIdx); if(ci===undefined) return fail('પહેલા તમે જવાબ આપો.');
+    if (E.helpers[name]!==undefined) return fail('તમે પહેલેથી મદદ કરી છે.');
+    if (Object.keys(E.helpers).length>=PUKAR_MAX) return fail('મદદ પૂરી — '+PUKAR_MAX+' સાથીઓ એ મદદ કરી દીધી.');
+    E.helpers[name]=o.card[ci];
+    const tl={}; for(const t of Object.values(E.helpers)) tl[t]=(tl[t]||0)+1;
+    a._pk={qi:E.qi, list:Object.entries(tl).sort((x,y)=>y[1]-x[1]).map(([text,c])=>({text,c})), n:Object.keys(E.helpers).length};
+    broadcast(code); cb&&cb({ok:true});
   });
 
   socket.on('player:claim', ({code,name,type}) => {

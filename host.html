@@ -2020,7 +2020,7 @@ const BKIMG={k:n=>'gs_bkimg'+n,get(n){try{let u=localStorage.getItem(this.k(n));
    try{ this.mig(); localStorage.setItem(this.k(n),u); msg&&(msg.textContent='✅ Page '+n+' ની Image Save થઈ'); }catch(e){ msg&&(msg.textContent='⚠️ Browser માં જગ્યા નથી. નાની Image વાપરો.'); } this.apply(); }; im.src=rd.result; }; rd.readAsDataURL(file); },
  clear(n){ this.mig(); try{ localStorage.removeItem(this.k(n)); }catch(e){} this.apply(); }};
 document.addEventListener('DOMContentLoaded',()=>BKIMG.apply()); if(document.readyState!=='loading') BKIMG.apply();
-const MODE_GU={1:['🛡','સુદર્શન શીલ્ડ મોડ','Sudharsan Shield Mode','ખોટાનો ➖ નથી · Life Line નથી · ⭐ ×2'],2:['✨','અવતાર કૃપા મોડ','Divine Intervention Mode','ખોટાનો −1 · 🤝 Zone Madad, 🔄 Change · ⭐×2 💣×2'],3:['🪙','દિવ્ય આશીર્વાદ દાવ મોડ','Wager with Divine Blessing Mode','ખોટાનો −1 · 🔥 Streak, 🛡 Safety, ♻️ Recharge · 💎 ⭐×2 💣×2']};
+const MODE_GU={1:['🛡','સુદર્શન શીલ્ડ મોડ','Sudharsan Shield Mode','ખોટાનો ➖ નથી · Life Line નથી · ⭐ ×2'],2:['✨','અવતાર કૃપા મોડ','Divine Intervention Mode','ખોટાનો −1 · 🤝 Zone Madad, 📣 Zone Pukar · ⭐×2 💣×2'],3:['🪙','દિવ્ય આશીર્વાદ દાવ મોડ','Wager with Divine Blessing Mode','ખોટાનો −1 · 🔥 Streak, 🛡 Safety, ♻️ Recharge · 💎 ⭐×2 💣×2']};
 const MODE_DEF=JSON.parse(JSON.stringify(MODE_GU));
 function applyMN(r){ try{ const n=(r&&r.modeNames)||{}; [1,2,3].forEach(m=>{ const o=n[m]||{}; MODE_GU[m][1]=o.gu||MODE_DEF[m][1]; MODE_GU[m][2]=o.en||MODE_DEF[m][2]; }); }catch(e){} }
 function modeCounts(r){ const c={1:[0,0],2:[0,0],3:[0,0]}; (r.questions||[]).forEach((q,i)=>{ const m=q.m||1; c[m][1]++; if((r.usedIdx||[]).includes(i)) c[m][0]++; }); return c; }
@@ -2322,7 +2322,7 @@ async function downloadExcel(){
 
     const wonCats = WINNER_ORDER.filter(k=>!/^zone/.test(k)&&w[k]===name).map(k=>WINNER_LABELS[k]);
     return {name, zone:p.zone||'', avatar:p.avatar||'', correct:res.correctCount,
-      wrong:res.cellState.filter(s=>s==='red').length, netScore:res.netScore, personal:res.personal, zoneBonus:res.zoneBonus, gems:res.gems, stars:res.stars, bombs:res.bombs, dd:res.streakPts, life:['safety','madad','change','streak','recharge'].filter(k=>(p.lives||{})[k]!=null).map(k=>({safety:'🛡',madad:'🤝',change:'🔄',streak:'🔥',recharge:'♻️'}[k])+'Q'+((p.lives[k])+1)).join(' ')||'—', validLines, invalidLines,
+      wrong:res.cellState.filter(s=>s==='red').length, netScore:res.netScore, personal:res.personal, zoneBonus:res.zoneBonus, gems:res.gems, stars:res.stars, bombs:res.bombs, dd:res.streakPts, life:['safety','madad','pukar','streak','recharge'].filter(k=>(p.lives||{})[k]!=null).map(k=>({safety:'🛡',madad:'🤝',pukar:'📣',streak:'🔥',recharge:'♻️'}[k])+'Q'+((p.lives[k])+1)).join(' ')||'—', validLines, invalidLines,
       fullHouse:res.fullHouse?'Yes':'No', 
       lineWinner: wonCats.length?wonCats.join(', '):'—',
       winTime: wonCats.length?WINNER_ORDER.filter(k=>w[k]===name&&!/^top/.test(k)&&!/^zone/.test(k)).map(k=>WINNER_LABELS[k]+': '+fmtDur(w[k+'_ms'])).join(' | '):'—'};
@@ -2384,7 +2384,7 @@ async function downloadExcel(){
   ws5.columns=[{header:'Item',key:'k',width:34},{header:'Count',key:'v',width:12},{header:'Out of',key:'o',width:12}];
   ws5.getRow(1).eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'},size:12}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF7C3AED'}}; c.alignment={horizontal:'center'}; });
   { const LS=r.lifeStats||{}, HS=r.hidStats||{}, tp=Object.keys(r.players).length;
-    [['🛡 Safety Net વાપર્યું',LS.safety,tp],['🤝 Zone Madad વાપર્યું',LS.madad,tp],['🔄 Change Answer વાપર્યું',LS.change,tp],['🔥 Bonus Streak વાપર્યું',LS.streak,tp],['♻️ Recharge વાપર્યું',LS.recharge,tp],
+    [['🛡 Safety Net વાપર્યું',LS.safety,tp],['🤝 Zone Madad વાપર્યું',LS.madad,tp],['📣 Zone Pukar વાપર્યું',LS.pukar,tp],['🔥 Bonus Streak વાપર્યું',LS.streak,tp],['♻️ Recharge વાપર્યું',LS.recharge,tp],
      ['💎 Jackpot મળ્યા (સાચા જવાબ પર)',HS.gemHit,HS.gemTotal],['⭐ Star મળ્યા',HS.starHit,HS.starTotal],['💣 Bomb ફૂટ્યા (ખોટા જવાબ પર)',HS.bombHit,HS.bombTotal]].forEach(x=>ws5.addRow({k:x[0],v:x[1],o:x[2]})); }
 
   // ---------- Summary sheet (static values, ready to show on screen) ----------

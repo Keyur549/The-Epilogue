@@ -340,6 +340,7 @@ function mstageHTML(r){
 }
 function epiRows(res){   // [[label,value]] for the report card
   const rows=[]; const sg=n=>(n>0?'+':'')+n;
+  (res.pukarRows||[]).forEach(x=>rows.push(['📣 Zone Pukar મદદ: '+x.asker+' (Q'+(x.qi+1)+')'+(x.right?' ✅':''),sg(x.pts)]));
   (res.sank||[]).forEach(x=>rows.push(['🎯 Mode-'+x.m+(x.auto?' સંકલ્પ લીધો નહિ ❌':' સંકલ્પ '+x.pick+' → સાચા '+x.got+(x.met?' ✅':' ❌')),sg(x.pts)]));
   (res.karmaP||[]).forEach(x=>{ const K=KARMA_PL[['ashirvad','nyay','zadap','toofan','prakash','agni'].indexOf(x.key)]; if(x.pts) rows.push(['🎡 Mode-'+x.m+' કર્મ: '+K[0]+' '+K[1],sg(x.pts)]); });
   return rows;
@@ -352,7 +353,7 @@ function epiZoneRows(res){
 }
 const MODE_INFO={
  1:{ic:'🛡',gu:'સુદર્શન શીલ્ડ મોડ',en:'Sudharsan Shield Mode',rule:'ખોટા જવાબનો ➖ માર્ક નથી · કોઈ Life Line નથી · ⭐ છુપાયેલા'},
- 2:{ic:'✨',gu:'અવતાર કૃપા મોડ',en:'Divine Intervention Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🤝 Zone Madad, 🔄 Change · ⭐💣 છુપાયેલા'},
+ 2:{ic:'✨',gu:'અવતાર કૃપા મોડ',en:'Divine Intervention Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🤝 Zone Madad, 📣 Zone Pukar · ⭐💣 છુપાયેલા'},
  3:{ic:'🪙',gu:'દિવ્ય આશીર્વાદ દાવ મોડ',en:'Wager with Divine Blessing Mode',rule:'ખોટા જવાબનો −1 · Life Line: 🔥 Bonus Streak, 🛡 Safety Net, ♻️ Recharge · 💎⭐💣 છુપાયેલા'}};
 function curMode(r){ const q=r.curIdx!=null&&(r.status==='question'||r.status==='locked'||r.status==='revealing'||r.status==='spinning')?r.questions[r.curIdx]:null; return (q&&q.m)||r.mode||1; }
 const MODE_DEF=JSON.parse(JSON.stringify(MODE_INFO));
@@ -367,41 +368,43 @@ function modeBannerHTML(r){
   return h;
 }
 function modeLegend(){ return `<div class="mleg"><span style="color:#2563eb"><i style="background:#2563eb"></i>Mode-1</span><span style="color:#d97706"><i style="background:#d97706"></i>Mode-2</span><span style="color:#be185d"><i style="background:#be185d"></i>Mode-3</span></div>`; }
-const LIFE_DEFS=[['safety','🛡','Safety Net'],['madad','🤝','Zone Madad'],['change','🔄','Change'],['streak','🔥','Bonus Streak'],['recharge','♻️','Recharge']];
+const LIFE_DEFS=[['safety','🛡','Safety Net'],['madad','🤝','Zone Madad'],['pukar','📣','Zone Pukar'],['streak','🔥','Bonus Streak'],['recharge','♻️','Recharge']];
 function useLife(k,target){
   state.rcPick=false;
-  const MSG={streak:'🔥 Bonus Streak ચાલુ! આ + આગળના 2 પ્રશ્નના જવાબ બધા સાચા તો +10, એક પણ ખોટો/ખાલી તો −5.',recharge:'♻️ Recharge ચાલુ! હવે Mode-2 ની 🤝 Zone Madad અથવા 🔄 Change માંથી કોઈ એક (1 વાર) વાપરી શકશો.',safety:'🛡 Safety Net ચાલુ! આ પ્રશ્ન પર તમારા Zone નું Lock થવાનું Limit ઓછું થયું.',madad:'🤝 તમારા Zone ના સૌથી વધુ જવાબ નીચે દેખાય છે.',change:'🔄 Change ચાલુ: સમય પૂરો થાય એ પહેલાં નવું ખાનું દબાવો (1 વાર).',double:'🎯 Double Down ચાલુ: આ પ્રશ્નનો ±1 બમણો થશે.'};
+  const MSG={streak:'🔥 Bonus Streak ચાલુ! આ + આગળના 2 પ્રશ્નના જવાબ બધા સાચા તો +10, એક પણ ખોટો/ખાલી તો −5.',recharge:'♻️ Recharge ચાલુ! હવે Mode-2 ની 🤝 Zone Madad અથવા 📣 Zone Pukar માંથી કોઈ એક (1 વાર) વાપરી શકશો.',safety:'🛡 Safety Net ચાલુ! આ પ્રશ્ન પર તમારા Zone નું Lock થવાનું Limit ઓછું થયું.',madad:'🤝 તમારા Zone ના સૌથી વધુ જવાબ નીચે દેખાય છે.',pukar:'📣 પુકાર મોકલ્યો! Zone ના જેમણે જવાબ આપ્યો છે તે મદદ કરશે. હિંટ આવે ત્યાં સુધી રાહ જુઓ, પછી જવાબ આપો.',double:'🎯 Double Down ચાલુ: આ પ્રશ્નનો ±1 બમણો થશે.'};
   socket.emit('player:life',{code:state.code,name:state.name,life:k,target:target},(res)=>{
     state.pmsg=(!res||!res.ok)?((res&&res.error)||'Life Line વાપરી શકાઈ નહિ.'):MSG[k];
     clearTimeout(state.pmsgT); state.pmsgT=setTimeout(()=>{ state.pmsg=''; render(); },5000);
     render();
   });
 }
+function pukarHelp(a){ socket.emit('player:pukarHelp',{code:state.code,name:state.name,asker:a},(res)=>{ if(res&&!res.ok){ state.pmsg=res.error||'મદદ થઈ નહિ.'; clearTimeout(state.pmsgT); state.pmsgT=setTimeout(()=>{ state.pmsg=''; render(); },4000); } render(); }); }
 function stkIn(r,L,qi){ if(L.streak==null||qi==null) return false; const seq=r.usedIdx||[], pos=seq.indexOf(L.streak); return pos>=0 && seq.indexOf(qi)>=pos && seq.indexOf(qi)<pos+3; }
 function lifeHTML(r,p){
   const L=p.lives||{}, cur=r.curIdx, q=(r.status==='question'&&!r.paused), inQ=r.status==='question';
-  const usedHere=['safety','madad','streak','recharge'].some(k=>L[k]===cur)&&inQ;
+  const usedHere=['safety','madad','pukar','streak','recharge'].some(k=>L[k]===cur)&&inQ;
   const m=curMode(r);
   if(m===1||r.modeDone||r.status==='lobby'){ return state.pmsg?`<div class="pmsg">${esc(state.pmsg)}</div>`:''; }
-  const allow=m===2?['madad','change']:['safety','streak','recharge'].concat(p.rcOpen?['madad','change']:[]);
+  const allow=m===2?['madad','pukar']:['safety','streak','recharge'].concat(p.rcOpen?['madad','pukar']:[]);
   let h=`<div class="pwr">`;
   LIFE_DEFS.filter(d=>allow.includes(d[0])).forEach(([k,ic,lb])=>{
-    const rcFree=(m===3&&p.rcOpen&&(k==='madad'||k==='change'));
+    const rcFree=(m===3&&p.rcOpen&&(k==='madad'||k==='pukar'));
     const used=L[k]!=null&&!rcFree, act=(L[k]===cur&&inQ);
-    let dis=!q||used||(k!=='change'&&usedHere);
-    if(k==='change'&&(markCell(p,cur)===undefined||p.changed&&!rcFree)) dis=true;
+    let dis=!q||used||usedHere;
+    if(k==='pukar'&&markCell(p,cur)!==undefined) dis=true;
     if(k==='streak'&&r.questions.filter((x,i)=>(x.m||1)===3&&!(r.usedIdx||[]).includes(i)).length<2) dis=true;
     if(k==='recharge'&&(p.rcOpen)) dis=true;
     h+=`<button class="${act?'act':(used?'used':'')}" ${dis?'disabled':''} onclick="useLife('${k}')"><b>${ic}</b>${lb}${used&&!act?'<br>વપરાયું':(act?'<br>ચાલુ ✔':'')}</button>`;
   });
   h+=`</div>`;
-  if(m===3&&p.rcOpen) h+=`<div class="cpy">♻️ Recharge તૈયાર: <b>🤝 Zone Madad</b> અથવા <b>🔄 Change</b> માંથી એક પસંદ કરો (1 વાર).</div>`;
+  if(m===3&&p.rcOpen) h+=`<div class="cpy">♻️ Recharge તૈયાર: <b>🤝 Zone Madad</b> અથવા <b>📣 Zone Pukar</b> માંથી એક પસંદ કરો (1 વાર).</div>`;
   if(inQ){
     const z=state.zl;
     if(p.zone&&z&&z.qi===cur) h+=z.pct!=null?`<div class="zlive">👥 તમારા Zone ના <b>${z.pct}%</b> Players એ આ પ્રશ્ન સાચો આપ્યો છે <span>(${z.c}/${z.n})</span><div class="zbar"><i style="width:${z.pct}%"></i></div><small>ઓછું % હોય તો 🤝 Madad / 🛡 Safety Net વિચારો</small></div>`:`<div class="zlive">👥 Zone નું live % — ઓછામાં ઓછા 3 active Players જવાબ આપે પછી દેખાશે</div>`;
     if(L.streak!=null){ const seq=r.usedIdx||[], pos=seq.indexOf(L.streak); const done=pos>=0?Math.min(3,seq.length-pos):0; if(pos>=0&&done<=3&&!(seq.length-pos>3)) h+=`<div class="cpy">🔥 Bonus Streak ચાલુ: પ્રશ્ન <b>${Math.min(3,done)}/3</b> — બધા સાચા તો <b>+10</b>, નહિ તો <b>−5</b>.</div>`; }
     if(p._md&&p._md.qi===cur) h+=`<div class="cpy">🤝 તમારા Zone ના ${p._md.n} Players માંથી:`+p._md.list.map(x=>`<div>${esc(x.text)}<i>${x.pct}%</i></div>`).join('')+`<div style="font-weight:600;font-size:.78rem;margin-top:4px">⚠️ ભીડ ખોટી પણ હોઈ શકે.</div></div>`;
-    if(L.change===cur&&!p.changed) h+=`<div class="pmsg">🔄 Change ચાલુ: નવું ખાનું દબાવો (1 વાર)</div>`;
+    if(L.pukar===cur){ const pk=(p._pk&&p._pk.qi===cur)?p._pk:{list:[],n:0}; h+=`<div class="cpy">📣 Zone Pukar ચાલુ — ${pk.n}/5 સાથીઓએ મદદ કરી`+(pk.list.length?pk.list.map(x=>`<div>${esc(x.text)}<i>${x.c} સાથી</i></div>`).join('')+`<div style="font-weight:600;font-size:.78rem;margin-top:4px">⚠️ હિંટ છે, ગેરંટી નથી. અંતિમ જવાબ તમારો.</div>`:'<div style="font-weight:600;font-size:.8rem;margin-top:4px">⏳ મદદ આવવાની રાહ જુઓ…</div>')+`</div>`; }
+    (r.pukarAsks||[]).forEach(a=>{ h+=`<div class="cpy" style="background:linear-gradient(135deg,#ede9fe,#fce7f3)">📣 <b>${esc(a.asker)}</b> ને મદદ જોઈએ છે `+(a.helped?'<br>✅ તમે મદદ કરી (+1, જવાબ સાચો હોય તો +2)':(a.left>0?`<br><button class="btn" style="margin-top:6px" onclick="pukarHelp(this.dataset.a)" data-a="${esc(a.asker)}">🤝 મદદ કરો</button> <small>(${a.left} સીટ બાકી · +1, સાચો જવાબ હોય તો +2)</small>`:'<br>મદદ પૂરી થઈ ગઈ.'))+`</div>`; });
   }
   if(state.pmsg) h+=`<div class="pmsg">${esc(state.pmsg)}</div>`;
   return h;
@@ -432,7 +435,7 @@ function playerResults(pname){ const p=state.room.players[pname]; return (p&&p.r
 const FXI={gem:'💎',star:'⭐',bomb:'💣'};
 function cardTags(r,p,res,qi){
   const L=p.lives||{}, t=[]; const ci=markCell(p,qi);
-  if(L.safety===qi) t.push('🛡'); if(L.madad===qi) t.push('🤝'); if(L.change===qi) t.push('🔄'); if(stkIn(r,L,qi)) t.push('🔥'); if(L.recharge===qi) t.push('♻️');
+  if(L.safety===qi) t.push('🛡'); if(L.madad===qi) t.push('🤝'); if(L.pukar===qi) t.push('📣'); if(stkIn(r,L,qi)) t.push('🔥'); if(L.recharge===qi) t.push('♻️');
   const mq=(res.mysteryQs||[]).find(x=>x.qi===qi); if(mq) t.push('🎁+'+mq.pts);
   if(ci!==undefined){ if(res.fx[ci]&&(res.cellState[ci]==='green'||res.fx[ci]==='bomb'&&res.cellState[ci]==='red')) t.push(FXI[res.fx[ci]]); t.push('<b>'+(res.pts[ci]>0?'+':'')+res.pts[ci]+'</b>'); }
   return t.join(' ');
@@ -627,7 +630,7 @@ function reportHtmlMine(){
   const rows=r.usedIdx.map(qi=>{ const ci=revMap[qi]; const given=ci!==undefined?p.card[ci]:'—'; const ok=ci!==undefined&&r.questions[qi].a===given; const none=ci===undefined;
     return `<tr class="${none?'n':(ok?'g':'b')}"><td>${qi+1}</td><td>${esc(r.questions[qi].q)}</td><td>${esc(given)}</td><td>${ok||none?'—':esc(r.questions[qi].a)}</td><td class="ic">${none?'—':(ok?'✅':'❌')}</td><td class="ic">${cardTags(r,p,res,qi)}</td></tr>`; }).join('');
   const cells=Array.from({length:25},(_,i)=>{ const st=res.cellState[i]; const f=res.fx[i]; const qn=p.marks[i]; return `<div class="c ${st}">${qn!==undefined?'<i class="qb">Q'+(qn+1)+'</i>':''}${esc(p.card[i])}${f?`<em>${FXI[f]}${res.pts[i]?(res.pts[i]>0?' +':' ')+res.pts[i]:''}</em>`:(res.pts[i]?`<em>${res.pts[i]>0?'+':''}${res.pts[i]}</em>`:'')}</div>`; }).join('');
-  const lifeNames={safety:'🛡 Safety Net',madad:'🤝 Zone Madad',change:'🔄 Change',streak:'🔥 Bonus Streak'};
+  const lifeNames={safety:'🛡 Safety Net',madad:'🤝 Zone Madad',pukar:'📣 Zone Pukar',streak:'🔥 Bonus Streak'};
   const lifeUsed=Object.keys(lifeNames).map(k=>L[k]!=null?`${lifeNames[k]} (Q${L[k]+1})`:`<s>${lifeNames[k]}</s>`).join(' · ');
   const claims=Object.keys(p.claims||{}).map(k=>{ const c=p.claims[k]; return `${k==='full'?'Full House':k.replace('line','')+' Line'}: ${c.valid===true?'✅':'❌'} ${fmtTime(c.ts)}`; }).join(' · ')||'કોઈ Claim નહિ';
   const zbox=mz?`<div class="zb"><b>🎴 Zone ${esc(p.zone)}</b> — ✅ ${mz.okCells}/25 ખાનાં · 📏 ${mz.lines} Line${mz.full?' · 🏠 Full House':''} · Zone Bonus <b>+${mz.bonus}</b> · Zone Rank #${mz.rank}/${res.zones||''}${mz.fhTs?' · Full House '+fmtTime(mz.fhTs):''}</div>`:'';
@@ -1010,6 +1013,7 @@ function render(){
     let cls='cell'+(LT[i]?' inline':'');
     let hintOn=false;
     if(inQ&&p._md&&p._md.qi===r.curIdx&&p._md.list.some(x=>x.text===p.card[i])) hintOn=true;
+    if(inQ&&p._pk&&p._pk.qi===r.curIdx&&p._pk.list.some(x=>x.text===p.card[i])) hintOn=true;
     if(hintOn) cls+=' hint';
     let extra='';
     if(rev&&fset.has(i)){

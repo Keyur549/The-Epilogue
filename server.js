@@ -415,6 +415,8 @@ function zoneSummary(room){
     .sort((a,b)=>a.rank-b.rank);
 }
 function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='question'||room.status==='locked'); for(const p of Object.values(room.players||{})){ const z=String((p&&p.zone)||'').trim(); if(!z) continue; const k=z.toLowerCase(); const o=m[k]||(m[k]={z,i:Object.keys(m).length,n:0,a:0,l:0}); o.n++; if(live&&q!=null&&Object.values(p.marks||{}).includes(q)) o.a++; } if(room.zlock) for(const k in m){ const zl=room.zlock[k]; if(zl&&zl.locks) m[k].l=zl.locks.reduce((s,x)=>s+(x?1:0),0); } return Object.values(m).slice(0,40); }
+// 🎨 optional colour overrides (RGB/HEX) — empty = game keeps its original colours
+function cleanColors(c){ if(!c||typeof c!=='object') return null; const o={}; let n=0; for(const k of Object.keys(c)){ if(n>=60) break; if(/^[a-z][a-z0-9]{0,7}$/.test(k) && /^#[0-9a-fA-F]{6}$/.test(String(c[k]||''))){ o[k]=String(c[k]).toLowerCase(); n++; } } return n?o:null; }
 function slimBase(room){
   const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, sank, karma, qOpenAt, pukar, ...rest } = room;
   const n = Object.keys(players).length;
@@ -579,11 +581,13 @@ io.on('connection', (socket) => {
     broadcast(code); cb&&cb({ok:true,removed:c});
   });
 
+  socket.on('host:setColors', ({code,colors}, cb) => { const r=rooms[code]; if(!r){ cb&&cb({ok:false}); return; } r.colors=cleanColors(colors); broadcast(code); cb&&cb({ok:true}); });
   socket.on('host:setCert', ({code,cert}, cb) => {
     const r=rooms[code]; if(!r||!cert){ cb&&cb({ok:false}); return; }
     const t=(x,n)=>String(x==null?'':x).slice(0,n);
     const c={title:t(cert.title,60),sub:t(cert.sub,60),msg:t(cert.msg,120),event:t(cert.event,100),org:t(cert.org,60),signer:t(cert.signer,60),color:/^#[0-9a-f]{6}$/i.test(cert.color||'')?cert.color:''};
     if(typeof cert.logo==='string' && /^data:image\/(png|jpeg|webp);base64,/.test(cert.logo) && cert.logo.length<=450000) c.logo=cert.logo;
+    if(typeof cert.signImg==='string' && /^data:image\/(png|jpeg|webp);base64,/.test(cert.signImg) && cert.signImg.length<=250000) c.signImg=cert.signImg;
     r.cert=c; scheduleBackup(code); cb&&cb({ok:true});
   });
   socket.on('cert:get', ({code}, cb) => { const r=rooms[code]; cb&&cb({ok:!!r, cert:(r&&r.cert)||null, revealed:!!r&&r.status==='revealed'}); });
@@ -658,13 +662,13 @@ io.on('connection', (socket) => {
     cb && cb({ok: id===HOST_ID && pw===HOST_PW});
   });
 
-  socket.on('host:create', ({hostName, maxPlayers, qaText, modeNames}, cb) => {
+  socket.on('host:create', ({hostName, maxPlayers, qaText, modeNames, colors}, cb) => {
     const code = randCode();
     const parsed = parseQA(qaText);
     rooms[code] = {
       code, hostName, maxPlayers: maxPlayers||null, status:'lobby',
       questions: parsed.questions, usedIdx:[], curIdx:null, timerEnd:null,
-      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'book', mode:1, modeDone:false, zoneCards:{}, qClosedAt:{}, modeNames:cleanMN(modeNames)
+      players:{}, winners:null, revealStep:0, createdAt: Date.now(), zonePct:30, zoneSafe:25, draw:'book', mode:1, modeDone:false, zoneCards:{}, qClosedAt:{}, modeNames:cleanMN(modeNames), colors:cleanColors(colors)
     };
     rooms[code].mystery = pickQs(parsed.questions.length, MYSTERY_N, []); rooms[code].voteSet = pickQs(parsed.questions.length, VOTE_N, rooms[code].mystery); rooms[code].voteNow = false;
     socket.join(code);

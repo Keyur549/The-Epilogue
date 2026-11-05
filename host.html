@@ -2014,7 +2014,7 @@ function hostKarmaDone(){ socket.emit('host:karmaDone',{code:state.code}); }
 const KS={t:0,k:null};
 function karmaWheel(r){
   const n=KARMA_GU.length,seg=360/n,m=r.chakraFor,ki=(r.karmaKeys||{})[m],has=(ki!=null&&ki>=0);
-  const g='conic-gradient('+KARMA_GU.map((k,i)=>k[3]+' '+(i*seg)+'deg '+((i+1)*seg)+'deg').join(',')+')';
+  const g='conic-gradient('+KARMA_GU.map((k,i)=>CK('kw'+i,k[3])+' '+(i*seg)+'deg '+((i+1)*seg)+'deg').join(',')+')';
   const lab=KARMA_GU.map((k,i)=>{const a=(i+.5)*seg*Math.PI/180,R=34;return '<div class="kwsg" style="left:'+(50+Math.sin(a)*R)+'%;top:'+(50-Math.cos(a)*R)+'%"><span>'+k[0]+'</span></div>'}).join('');
   let age=0,rot=0,style='';
   if(has){ const key=m+':'+r.karmaSpin; if(KS.k!==key){KS.k=key;KS.t=Date.now();} age=Date.now()-KS.t; rot=360*6+(360-(ki+.5)*seg); style=age<4800?'animation:kwspin 4.6s cubic-bezier(.12,.7,.15,1) both;--rot:'+rot+'deg':'transform:rotate('+rot+'deg)'; }
@@ -2025,7 +2025,7 @@ function mstageView(r){
   const st=r.mstage;
   if(st==='intro') return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjs" style="margin-top:20vh;font-size:clamp(1.2rem,4vh,2.4rem)">🎬 MODE-'+(r.introFor||1)+' શરૂ થાય છે…</div>';
   if(st==='sankalp'){ const m=r.sankFor||1,n=r.nPlayers||0;
-    return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,#7c3aed,#db2777)">🎯 સંકલ્પ + 🏛 ઝોન પ્રતિજ્ઞા · MODE-'+m+'</div>'
+    return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,'+CK('pjs1','#7c3aed')+','+CK('pjs2','#db2777')+')">🎯 સંકલ્પ + 🏛 ઝોન પ્રતિજ્ઞા · MODE-'+m+'</div>'
      +'<div class="pjs">આ Mode માં હું કેટલા સાચા જવાબ આપીશ? દરેક Player Phone માં સંકલ્પ લે</div>'
      +'<div class="ksrow">'+SANK_OPT.map(o=>'<div class="ksopt"><b>'+o[0]+'</b><small>સાચા જવાબ</small><em>+'+o[1]+'</em><small style="color:#fca5a5">ન પાળો તો '+o[2]+'</small></div>').join('')+'</div>'
      +'<div class="pjs">🏛 Zone ના '+PRAT_PCT+'% કે વધુ Players સંકલ્પ પાળે તો Zone ને +'+PRAT_PTS+' · ઓછા પાળે તો Zone ના દરેકને '+PRAT_PEN+'</div>'
@@ -2033,7 +2033,7 @@ function mstageView(r){
      +'<div class="pjn">✅ '+(r.sankN||0)+' / '+n+' Players એ સંકલ્પ લીધો</div>'
      +'<div class="pjs" style="opacity:.7">🔒 પરિણામ છેલ્લે Result માં ખૂલશે</div>'; }
   const m=r.chakraFor,W=karmaWheel(r),K=W.has?KARMA_GU[W.ki]:null;
-  return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,#f59e0b,#dc2626)">🎡 કર્મ ચક્ર · MODE-'+m+' પૂરો</div>'+W.html
+  return '<div class="pjh">જ્ઞાન શોધ</div><div class="pjfire" style="background:linear-gradient(90deg,'+CK('pjk1','#f59e0b')+','+CK('pjk2','#dc2626')+')">🎡 કર્મ ચક્ર · MODE-'+m+' પૂરો</div>'+W.html
    +(W.done?'<div class="kwres" style="border-color:'+K[3]+'"><b>'+K[0]+' '+K[1]+'</b><span>'+K[2]+'</span></div><div class="pjs" style="opacity:.7">🔒 કોને કેટલું મળ્યું તે છેલ્લે Result માં ખૂલશે</div>':(W.has?'<div class="pjs">ચક્ર ફરે છે…</div>':'<div class="pjs">Host ▶ ચક્ર ફેરવો દબાવશે…</div>'));
 }
 function mstageBtns(r){
@@ -2792,7 +2792,7 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
  function bookView(r){var st=r.status,sh=stage(r),m=/id="bknum"><small>[^<]*<\/small><b>(\d*)<\/b>/.exec(sh),sig=(m&&m[1])?('o'+m[1]):'closed',low='',q=(r.questions&&r.questions[r.curIdx])||{};
   if(st==='question'){var rem=r.paused?Math.ceil((r.pausedMs||0)/1000):Math.max(0,Math.ceil(((r.timerEnd||0)-Date.now())/1000));
    low='<div class="pjs">પ્રશ્ન '+((r.usedIdx||[]).length)+'</div><div class="pjq">'+esc2(twText(r,q.q||''))+'</div>'+(q.img?'<img class="pjimg" src="'+esc2(q.img)+'" onerror="this.style.display=\'none\'">':'')+'<div class="pjt'+(rem<=5?' lo':'')+'">'+(r.paused?'⏸ ':'')+rem+'</div>'+bars(r)}
-  else if(st==='locked')low='<div class="pjfire" style="'+(r.modeDone?'background:linear-gradient(90deg,#f59e0b,#dc2626);font-size:clamp(1.3rem,4vh,2.4rem);padding:14px 34px;box-shadow:0 0 30px rgba(245,158,11,.6)':'background:linear-gradient(90deg,#475569,#1e293b);box-shadow:none;animation:none')+'">'+(r.modeDone?'🎉 Mode-'+(r.mode||1)+' પૂરો!'+(' · હવે કર્મ ચક્ર'):'⏱ સમય પૂરો — હવે આગળની વાત ખોલો')+'</div>'+bars(r);
+  else if(st==='locked')low='<div class="pjfire" style="'+(r.modeDone?'background:linear-gradient(90deg,'+CK('pjk1','#f59e0b')+','+CK('pjk2','#dc2626')+');font-size:clamp(1.3rem,4vh,2.4rem);padding:14px 34px;box-shadow:0 0 30px rgba(245,158,11,.6)':'background:linear-gradient(90deg,#475569,#1e293b);box-shadow:none;animation:none')+'">'+(r.modeDone?'🎉 Mode-'+(r.mode||1)+' પૂરો!'+(' · હવે કર્મ ચક્ર'):'⏱ સમય પૂરો — હવે આગળની વાત ખોલો')+'</div>'+bars(r);
   else if(st==='active')low=((r.usedIdx||[]).length?'':'<div class="pjs">Game શરૂ થાય છે…</div>')+bars(r);
   return '<div class="pjbm">'+pjModeChip(r)+'<div class="pjbk" data-s="'+sig+'">'+sh+'</div>'+low+'</div>'}
  var TW={idx:null,t0:0};var WV={s:null,t:0};
@@ -2877,7 +2877,7 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
  function build(){o.innerHTML='<div class="hin"><div class="hcard"><div class="hhd"><b>🛠 Host Tools</b><button class="hx" id="tx">✕</button></div>'+
   '<div class="tsec"><h3>👥 Players (<span id="tc">0</span>) — Rename / Kick</h3><input type="search" id="tq" placeholder="નામ / Zone શોધો…"><div id="tl"></div></div>'+
   '<div class="tsec"><h3>🤖 Pre-test (Test Players)</h3><div class="muted" style="font-size:.8rem">Lobby માં નકલી Players ઉમેરી જુઓ કે Server/Host કેટલું ભારે થાય છે. Game શરૂ કરતાં જ બધા Test Players આપોઆપ નીકળી જાય છે.</div><input type="number" id="tn" min="1" max="1000" value="50"><label style="display:block;margin:6px 0;font-size:.85rem"><input type="checkbox" id="tplay"> 🎮 Test Players Game ma pan rahe ane jawab aape <b>(fakt Test game — real game ma ON na karvu)</b></label><div class="tbt"><button id="tadd">➕ Test Players ઉમેરો</button><button class="r" id="tclr">🧹 Test Players કાઢો</button></div><div class="tmsg" id="tmsg"></div></div>'+
-  '<div class="tsec"><h3>🏅 Certificates & Report</h3><div class="muted" style="font-size:.8rem">Result Reveal પછી: દરેક Winner નું Certificate (PNG) અથવા બધાનું એક PDF, અને Event Report PDF.</div><details style="margin:8px 0"><summary style="cursor:pointer;font-weight:800">✏️ Certificate Edit / મારો Logo</summary><div style="display:grid;gap:6px;margin-top:6px"><input type="text" id="ce_title" placeholder="Title (પ્રમાણપત્ર)"><input type="text" id="ce_sub" placeholder="Sub-title (CERTIFICATE OF ACHIEVEMENT)"><input type="text" id="ce_msg" placeholder="Message line"><input type="text" id="ce_event" placeholder="Event / સંસ્થા નું નામ"><input type="text" id="ce_signer" placeholder="સહી કરનાર નું નામ (વૈકલ્પિક)"><input type="text" id="ce_org" placeholder="સહી નીચે લખાણ (Host / Organizer)"><label style="font-size:.85rem">Colour <input type="color" id="ce_color" value="#b8860b"></label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><img id="ce_logo" alt="" style="max-height:56px;max-width:140px;display:none;border:1px solid var(--line);border-radius:8px;background:#fff"><button type="button" id="ce_up" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Logo Upload</button><button type="button" id="ce_rm" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ Logo કાઢો</button></div><input type="file" id="ce_f" accept="image/png,image/jpeg,image/webp" style="display:none"><div class="tbt"><button id="ce_save">💾 Save + Players ને બતાવો</button><button id="ce_pv" class="r" style="background:#475569">👁 Preview</button></div><img id="ce_img" alt="" style="width:100%;border-radius:10px;display:none;border:1px solid var(--line)"></div></details><div id="tcr"></div><div class="tbt"><button id="tcall">📄 બધા Certificates (PDF)</button><button id="trep">📊 Event Report (PDF)</button></div><div class="tmsg" id="tcm"></div></div>'+
+  '<div class="tsec"><h3>🏅 Certificates & Report</h3><div class="muted" style="font-size:.8rem">Result Reveal પછી: દરેક Winner નું Certificate (PNG) અથવા બધાનું એક PDF, અને Event Report PDF.</div><details style="margin:8px 0"><summary style="cursor:pointer;font-weight:800">✏️ Certificate Edit / મારો Logo</summary><div style="display:grid;gap:6px;margin-top:6px"><input type="text" id="ce_title" placeholder="Title (પ્રમાણપત્ર)"><input type="text" id="ce_sub" placeholder="Sub-title (CERTIFICATE OF ACHIEVEMENT)"><input type="text" id="ce_msg" placeholder="Message line"><input type="text" id="ce_event" placeholder="Event / સંસ્થા નું નામ"><input type="text" id="ce_signer" placeholder="સહી કરનાર (Host) નું નામ"><input type="text" id="ce_org" placeholder="સહી નીચે લખાણ (Host / Organizer)"><div style="border:1px dashed var(--line);border-radius:12px;padding:8px"><b>✍ Host Signature</b><div class="muted" style="font-size:.8rem">Signature ની photo Upload કરો અથવા નીચે Mouse/આંગળીથી સહી કરો.</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0"><img id="ce_sg" alt="" style="max-height:60px;max-width:180px;display:none;border:1px solid var(--line);border-radius:8px;background:#fff"><button type="button" id="ce_sgup" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">📷 Signature Upload</button><button type="button" id="ce_sgrm" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ Signature કાઢો</button></div><input type="file" id="ce_sgf" accept="image/png,image/jpeg,image/webp" style="display:none"><canvas id="ce_pad" width="440" height="150" style="width:100%;max-width:440px;height:auto;touch-action:none;background:#fff;border:2px solid var(--line);border-radius:10px;display:block"></canvas><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><input type="color" id="ce_ink" value="#1a237e" style="width:44px;height:34px;padding:0;border:0;background:none"><button type="button" id="ce_padclr" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">🧽 Clear</button><button type="button" id="ce_paduse" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">✔ આ સહી વાપરો</button></div></div><label style="font-size:.85rem">Colour <input type="color" id="ce_color" value="#0E5A43"></label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><img id="ce_logo" alt="" style="max-height:56px;max-width:140px;display:none;border:1px solid var(--line);border-radius:8px;background:#fff"><button type="button" id="ce_up" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Logo Upload</button><button type="button" id="ce_rm" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ Logo કાઢો</button></div><input type="file" id="ce_f" accept="image/png,image/jpeg,image/webp" style="display:none"><div class="tbt"><button id="ce_save">💾 Save + Players ને બતાવો</button><button id="ce_pv" class="r" style="background:#475569">👁 Preview</button></div><img id="ce_img" alt="" style="width:100%;border-radius:10px;display:none;border:1px solid var(--line)"></div></details><div id="tcr"></div><div class="tbt"><button id="tcall">📄 બધા Certificates (PDF)</button><button id="trep">📊 Event Report (PDF)</button></div><div class="tmsg" id="tcm"></div></div>'+
   '<div class="tsec"><h3>📖 Book Page ની Image</h3><div class="muted" style="font-size:.8rem">📖 વાત ખોલતી વખતે Book ના 3 phirta page ની આગળ અને પાછળ, એમ કુલ 6 Image મૂકી શકાય (પાછળની ખાલી રાખો તો કોરું કાગળ દેખાશે). Image આપોઆપ page ના માપ (ઊભી, 2:3) માં કપાઈને બેસે છે. ન મૂકો તો કોરું page રહેશે. Mobile ની Gallery કે Camera માંથી પણ Upload થાય.</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><b>Page 1 · આગળ</b><img id="bkimgpv1" alt=""><button type="button" class="bkup" data-n="1" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Upload</button><button type="button" class="bkrm" data-n="1" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ કાઢો</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><b>Page 1 · પાછળ</b><img id="bkimgpv4" alt=""><button type="button" class="bkup" data-n="4" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Upload</button><button type="button" class="bkrm" data-n="4" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ કાઢો</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><b>Page 2 · આગળ</b><img id="bkimgpv2" alt=""><button type="button" class="bkup" data-n="2" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Upload</button><button type="button" class="bkrm" data-n="2" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ કાઢો</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><b>Page 2 · પાછળ</b><img id="bkimgpv5" alt=""><button type="button" class="bkup" data-n="5" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Upload</button><button type="button" class="bkrm" data-n="5" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ કાઢો</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><b>Page 3 · આગળ</b><img id="bkimgpv3" alt=""><button type="button" class="bkup" data-n="3" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Upload</button><button type="button" class="bkrm" data-n="3" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ કાઢો</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><b>Page 3 · પાછળ</b><img id="bkimgpv6" alt=""><button type="button" class="bkup" data-n="6" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer">🖼 Upload</button><button type="button" class="bkrm" data-n="6" style="border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer">✖ કાઢો</button></div><input type="file" id="bkimgf" accept="image/*" style="display:none"><div class="tmsg" id="bkimgm"></div></div>'+
   '<div class="tsec"><h3>🔊 Sound Pack (Wheel / Timer / Winner)</h3><select id="tsp" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--line);font:inherit"></select><div class="tbt"><button id="tspt">▶ Test Sound</button></div></div>'+
   '<div class="tsec"><h3>💾 Backup</h3><div class="muted" style="font-size:.8rem">Game નું છેલ્લું Backup (દર થોડી સેકન્ડે આપોઆપ browser માં સચવાય છે) ફાઇલ તરીકે Download કરો. Laptop/Browser બદલવો પડે તો ફાઇલ થી Restore થાય.</div><div class="tbt"><button id="tdl">⬇️ Backup Download</button><button id="tup">📂 File થી Restore</button></div><input type="file" id="tf" accept=".json,application/json" style="display:none"><div class="tmsg" id="tbm"></div></div></div></div>';
@@ -2894,10 +2894,22 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
   (function(){var C={};try{C=JSON.parse(localStorage.getItem('certCfg')||'{}')}catch(x){}
    var F={ce_title:'title',ce_sub:'sub',ce_msg:'msg',ce_event:'event',ce_signer:'signer',ce_org:'org'};Object.keys(F).forEach(function(id){o.querySelector('#'+id).value=C[F[id]]||''});
    if(C.color)o.querySelector('#ce_color').value=C.color;var lg=o.querySelector('#ce_logo');function showLogo(){if(C.logo){lg.src=C.logo;lg.style.display='block'}else lg.style.display='none'}showLogo();
-   function read(){var n={};Object.keys(F).forEach(function(id){n[F[id]]=o.querySelector('#'+id).value.trim()});n.color=o.querySelector('#ce_color').value;if(C.logo)n.logo=C.logo;return n}
+   function read(){var n={};Object.keys(F).forEach(function(id){n[F[id]]=o.querySelector('#'+id).value.trim()});n.color=o.querySelector('#ce_color').value;if(C.logo)n.logo=C.logo;if(C.signImg)n.signImg=C.signImg;return n}
+   var sgi=o.querySelector('#ce_sg');function showSg(){if(C.signImg){sgi.src=C.signImg;sgi.style.display='block'}else sgi.style.display='none'}showSg();
+   o.querySelector('#ce_sgup').onclick=function(){o.querySelector('#ce_sgf').click()};o.querySelector('#ce_sgrm').onclick=function(){delete C.signImg;showSg()};
+   o.querySelector('#ce_sgf').onchange=function(){var f=this.files&&this.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(){var im=new Image();im.onload=function(){var k=Math.min(1,420/im.width,150/im.height),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);C.signImg=cv.toDataURL('image/png');if(C.signImg.length>200000)C.signImg=cv.toDataURL('image/jpeg',.8);showSg()};im.src=fr.result};fr.readAsDataURL(f)};
+   (function(){var pad=o.querySelector('#ce_pad'),px=pad.getContext('2d'),dr=false,lx=0,ly=0,ink=o.querySelector('#ce_ink');px.lineCap='round';px.lineJoin='round';px.lineWidth=3.2;
+    function pt(e){var r=pad.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return [(t.clientX-r.left)*pad.width/r.width,(t.clientY-r.top)*pad.height/r.height]}
+    function dn(e){e.preventDefault();dr=true;var p=pt(e);lx=p[0];ly=p[1];px.strokeStyle=ink.value;px.beginPath();px.arc(lx,ly,1.4,0,7);px.fillStyle=ink.value;px.fill()}
+    function mv(e){if(!dr)return;e.preventDefault();var p=pt(e);px.strokeStyle=ink.value;px.beginPath();px.moveTo(lx,ly);px.lineTo(p[0],p[1]);px.stroke();lx=p[0];ly=p[1]}
+    function up(){dr=false}
+    pad.addEventListener('mousedown',dn);pad.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);pad.addEventListener('touchstart',dn,{passive:false});pad.addEventListener('touchmove',mv,{passive:false});pad.addEventListener('touchend',up);
+    o.querySelector('#ce_padclr').onclick=function(){px.clearRect(0,0,pad.width,pad.height)};
+    o.querySelector('#ce_paduse').onclick=function(){var d=px.getImageData(0,0,pad.width,pad.height).data,x0=1e9,y0=1e9,x1=-1,y1=-1,i,x,y;for(i=3;i<d.length;i+=4){if(d[i]>10){var q=(i-3)/4;x=q%pad.width;y=Math.floor(q/pad.width);if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+     if(x1<0){alert('પહેલા સહી કરો');return}var w=x1-x0+12,h2=y1-y0+12,cv=document.createElement('canvas');cv.width=w;cv.height=h2;cv.getContext('2d').drawImage(pad,x0-6,y0-6,w,h2,0,0,w,h2);C.signImg=cv.toDataURL('image/png');showSg()}})();
    o.querySelector('#ce_up').onclick=function(){o.querySelector('#ce_f').click()};o.querySelector('#ce_rm').onclick=function(){delete C.logo;showLogo()};
    o.querySelector('#ce_f').onchange=function(){var f=this.files&&this.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(){var im=new Image();im.onload=function(){var k=Math.min(1,420/im.width,200/im.height),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);C.logo=cv.toDataURL('image/png');if(C.logo.length>400000)C.logo=cv.toDataURL('image/jpeg',.85);showLogo()};im.src=fr.result};fr.readAsDataURL(f)};
-   o.querySelector('#ce_save').onclick=function(){C=Object.assign(C,read());if(!o.querySelector('#ce_logo').src||lg.style.display==='none')delete C.logo;try{localStorage.setItem('certCfg',JSON.stringify(C))}catch(x){alert('Logo બહુ મોટો છે')}var m=o.querySelector('#tcm');CERT.prep().then(function(){m.textContent='✅ Save થયું — Winners ના phone માં આ જ Certificate દેખાશે'})};
+   o.querySelector('#ce_save').onclick=function(){C=Object.assign(C,read());if(sgi.style.display==='none')delete C.signImg;if(!o.querySelector('#ce_logo').src||lg.style.display==='none')delete C.logo;try{localStorage.setItem('certCfg',JSON.stringify(C))}catch(x){alert('Logo બહુ મોટો છે')}var m=o.querySelector('#tcm');CERT.prep().then(function(){m.textContent='✅ Save થયું — Winners ના phone માં આ જ Certificate દેખાશે'})};
    o.querySelector('#ce_pv').onclick=function(){C=Object.assign(C,read());try{localStorage.setItem('certCfg',JSON.stringify(C))}catch(x){}CERT.fonts().then(CERT.prep).then(function(){var d=(CERT.list()[0])||{name:'વિજેતા નું નામ',zone:'Zone',label:'1 Line',detail:'⏱ 1 મિનિટ 23 સેકન્ડ માં',code:(room()&&room().code)||'ROOM'};var im=o.querySelector('#ce_img');im.src=CERT.draw(d).toDataURL('image/jpeg',.8);im.style.display='block'})}})();
   (function(){var box=o.querySelector('#tcr'),m=o.querySelector('#tcm');var rv=room()&&room().status==='revealed';
    if(!rv){box.innerHTML='<div class="muted" style="margin:6px 0">⏳ Result Reveal થયા પછી ઉપલબ્ધ થશે.</div>';o.querySelector('#tcall').disabled=true;o.querySelector('#trep').disabled=true;return}
@@ -2925,32 +2937,59 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
 
  var CSERIF="'Playfair Display','Noto Serif Gujarati','Noto Sans Gujarati',Georgia,serif",CDISP="'Cinzel','Noto Serif Gujarati',Georgia,serif",CSANS="'Noto Sans Gujarati','Shruti','Nirmala UI','Segoe UI',system-ui,sans-serif";
  function cfit(g,t,max,size,wt,fam,min){var s=size;g.font=wt+' '+s+'px '+fam;while(g.measureText(t).width>max&&s>(min||24)){s-=2;g.font=wt+' '+s+'px '+fam}return s}
- function certDraw(d,C,img){C=C||{};var W=1754,H=1240,c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d'),A=/^#[0-9a-f]{6}$/i.test(C.color||'')?C.color:'#b8860b';
-  var bg=g.createRadialGradient(W/2,H*.4,100,W/2,H/2,W*.7);bg.addColorStop(0,'#fffdf5');bg.addColorStop(1,'#f6ead0');g.fillStyle=bg;g.fillRect(0,0,W,H);
-  g.strokeStyle=A;g.lineWidth=12;g.strokeRect(28,28,W-56,H-56);g.lineWidth=3;g.strokeRect(54,54,W-108,H-108);
-  g.fillStyle=A;[[28,28],[W-28,28],[28,H-28],[W-28,H-28]].forEach(function(p){g.save();g.translate(p[0],p[1]);g.rotate(Math.PI/4);g.fillStyle=A;g.fillRect(-16,-16,32,32);g.fillStyle='#fffaf0';g.fillRect(-7,-7,14,14);g.restore()});
+ function certDraw(d,C,img){C=C||{};var W=1754,H=1240,c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d'),A=/^#[0-9a-f]{6}$/i.test(C.color||'')?C.color:'#0E5A43';
+  function mx(a,b,t){var x=[1,3,5].map(function(i){return parseInt(a.substr(i,2),16)}),y=[1,3,5].map(function(i){return parseInt(b.substr(i,2),16)});return '#'+x.map(function(v,i){var n=Math.round(v+(y[i]-v)*t).toString(16);return n.length<2?'0'+n:n}).join('')}
+  var A2=mx(A,'#000000',.38),A3=mx(A,'#ffffff',.45),RB=['#0B4A34','#C8875F','#E8B292','#12805F','#1F7A58','#B9774F','#0E3B2B'];
+  // ivory base + soft multicolour corner glows
+  g.fillStyle='#fffaf0';g.fillRect(0,0,W,H);
+  [[0,0,RB[0]],[W,0,RB[4]],[0,H,RB[2]],[W,H,RB[6]]].forEach(function(p){var r=g.createRadialGradient(p[0],p[1],10,p[0],p[1],620);r.addColorStop(0,p[2]+'38');r.addColorStop(1,p[2]+'00');g.fillStyle=r;g.fillRect(0,0,W,H)});
+  var cg=g.createRadialGradient(W/2,H*.45,50,W/2,H*.45,760);cg.addColorStop(0,'rgba(255,255,255,.9)');cg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=cg;g.fillRect(0,0,W,H);
+  // guilloche rings + watermark logo
+  g.save();g.strokeStyle=A;g.globalAlpha=.05;g.lineWidth=2;for(var i=1;i<=22;i++){g.beginPath();g.arc(W/2,H*.5,i*36,0,Math.PI*2);g.stroke()}g.restore();
+  if(img&&img.width){var wk=Math.min(620/img.width,620/img.height);g.save();g.globalAlpha=.07;g.drawImage(img,W/2-img.width*wk/2,H*.52-img.height*wk/2,img.width*wk,img.height*wk);g.restore()}
+  // rainbow frame + gold double line
+  var fr=g.createLinearGradient(0,0,W,0);RB.forEach(function(c1,i){fr.addColorStop(i/(RB.length-1),c1)});
+  g.strokeStyle=fr;g.lineWidth=18;g.strokeRect(26,26,W-52,H-52);
+  g.strokeStyle=A;g.lineWidth=3;g.strokeRect(52,52,W-104,H-104);g.lineWidth=1.2;g.strokeRect(62,62,W-124,H-124);
+  [[52,52],[W-52,52],[52,H-52],[W-52,H-52]].forEach(function(p,i){g.save();g.translate(p[0],p[1]);g.rotate(Math.PI/4);g.fillStyle=A;g.fillRect(-24,-24,48,48);g.fillStyle=RB[(i*2)%7];g.fillRect(-15,-15,30,30);g.fillStyle='#fffaf0';g.fillRect(-6,-6,12,12);g.restore()});
+  // confetti in the side margins
+  var sd=7;function rn(){sd=(sd*9301+49297)%233280;return sd/233280}
+  for(var k=0;k<46;k++){var side=k%2?1:0,x=side?W-70-rn()*60:70+rn()*60,y=120+rn()*(H-240);g.save();g.translate(x,y);g.rotate(rn()*3);g.fillStyle=RB[k%7];g.globalAlpha=.85;g.fillRect(-7,-3,14,6);g.restore()}
   g.textAlign='center';
-  if(img&&img.width){var k=Math.min(420/img.width,130/img.height,2),iw=img.width*k,ih=img.height*k;g.drawImage(img,W/2-iw/2,75+(130-ih)/2,iw,ih)}else{g.font='90px '+CSANS;g.fillStyle='#000';g.fillText('🏆',W/2,175)}
-  g.fillStyle=A;g.font='700 34px '+CDISP;g.fillText((C.sub||'CERTIFICATE OF ACHIEVEMENT').toUpperCase(),W/2,265);
-  g.fillStyle='#3b2a00';var ts=cfit(g,C.title||'પ્રમાણપત્ર',W-400,78,900,CSERIF,40);g.font='900 '+ts+'px '+CSERIF;g.fillText(C.title||'પ્રમાણપત્ર',W/2,355);
-  g.fillStyle='#6b5a2e';var ms=cfit(g,C.msg||'આ પ્રમાણપત્ર અભિનંદન સાથે આપવામાં આવે છે',W-300,34,600,CSANS,20);g.font='600 '+ms+'px '+CSANS;g.fillText(C.msg||'આ પ્રમાણપત્ર અભિનંદન સાથે આપવામાં આવે છે',W/2,445);
-  var s=cfit(g,d.name,W-340,150,900,CSERIF,60);g.fillStyle='#1f1400';g.font='900 '+s+'px '+CSERIF;g.fillText(d.name,W/2,620);
-  var ln=g.createLinearGradient(W*.2,0,W*.8,0);ln.addColorStop(0,'rgba(184,134,11,0)');ln.addColorStop(.5,A);ln.addColorStop(1,'rgba(184,134,11,0)');g.fillStyle=ln;g.fillRect(W*.2,652,W*.6,4);
-  if(d.zone){g.fillStyle='#6b5a2e';g.font='700 42px '+CDISP;g.fillText('ZONE · '+d.zone,W/2,722)}
-  var lab=d.label,ps=cfit(g,lab,W-500,66,800,CSERIF,34);g.font='800 '+ps+'px '+CSERIF;var pw=g.measureText(lab).width+120;
-  g.fillStyle=A;g.beginPath();g.roundRect(W/2-pw/2,765,pw,104,52);g.fill();g.fillStyle='#fffaf0';g.fillText(lab,W/2,837);
-  g.fillStyle='#3b2a00';var dt0=d.detail||'';if(dt0){var dsz=cfit(g,dt0,W-300,44,700,CSERIF,24);g.font='700 '+dsz+'px '+CSERIF;g.fillText(dt0,W/2,945)}
-  var ev=C.event||'જ્ઞાન શોધ – Lucky Card Quiz Championship';g.fillStyle='#6b5a2e';var es=cfit(g,ev,W-300,32,700,CSANS,20);g.font='700 '+es+'px '+CSANS;g.fillText(ev,W/2,1020);
-  var dt=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-  g.font='600 28px '+CSANS;g.textAlign='left';g.fillText('તારીખ: '+dt,150,1135);g.textAlign='right';g.fillText('Room: '+(d.code||''),W-150,1135);
-  g.textAlign='center';if(C.signer){g.fillStyle='#1f1400';var ss=cfit(g,C.signer,420,40,700,CSERIF,22);g.font='italic 700 '+ss+'px '+CSERIF;g.fillText(C.signer,W/2,1100)}
-  g.fillStyle=A;g.fillRect(W/2-190,1112,380,2);g.fillStyle='#6b5a2e';g.font='600 26px '+CSANS;g.fillText(C.org||'Host / Organizer',W/2,1150);
+  if(img&&img.width){var k2=Math.min(420/img.width,160/img.height,2),iw=img.width*k2,ih=img.height*k2;g.save();g.shadowColor='rgba(0,0,0,.3)';g.shadowBlur=16;g.drawImage(img,W/2-iw/2,78+(160-ih)/2,iw,ih);g.restore()}else{g.font='90px '+CSANS;g.fillStyle='#000';g.fillText('🏆',W/2,175)}
+  // sub title with flourishes
+  var sub=(C.sub||'CERTIFICATE OF ACHIEVEMENT').toUpperCase();g.fillStyle=A2;g.font='700 34px '+CDISP;g.fillText(sub,W/2,277);var sw=g.measureText(sub).width;g.fillStyle=A;[-1,1].forEach(function(s){g.fillRect(W/2+s*(sw/2+30)-(s<0?170:0),272,170,3);g.beginPath();g.arc(W/2+s*(sw/2+20),273,6,0,7);g.fill()});
+  // title: gradient
+  var tt=C.title||'પ્રમાણપત્ર',ts=cfit(g,tt,W-400,80,900,CSERIF,40);g.font='900 '+ts+'px '+CSERIF;var tw=g.measureText(tt).width,tg=g.createLinearGradient(W/2-tw/2,0,W/2+tw/2,0);tg.addColorStop(0,A2);tg.addColorStop(.5,A);tg.addColorStop(1,'#B9774F');g.fillStyle=tg;g.fillText(tt,W/2,368);
+  var mm=C.msg||'આ પ્રમાણપત્ર અભિનંદન સાથે આપવામાં આવે છે';g.fillStyle='#5a4a22';var ms=cfit(g,mm,W-300,34,600,CSANS,20);g.font='600 '+ms+'px '+CSANS;g.fillText(mm,W/2,448);
+  // name
+  var s=cfit(g,d.name,W-340,150,900,CSERIF,60);g.fillStyle='#1f1400';g.font='900 '+s+'px '+CSERIF;g.save();g.shadowColor='rgba(0,0,0,.18)';g.shadowBlur=8;g.shadowOffsetY=3;g.fillText(d.name,W/2,620);g.restore();
+  var ln=g.createLinearGradient(W*.2,0,W*.8,0);RB.forEach(function(c1,i){ln.addColorStop(i/(RB.length-1),c1)});g.fillStyle=ln;g.fillRect(W*.2,654,W*.6,6);
+  if(d.zone){g.fillStyle='#5a4a22';g.font='700 42px '+CDISP;g.fillText('ZONE · '+d.zone,W/2,724)}
+  // achievement pill
+  var lab=d.label,ps=cfit(g,lab,W-500,66,800,CSERIF,34);g.font='800 '+ps+'px '+CSERIF;var pw=g.measureText(lab).width+130;
+  var pg=g.createLinearGradient(0,765,0,869);pg.addColorStop(0,A3);pg.addColorStop(.18,A);pg.addColorStop(1,A2);g.save();g.shadowColor=A+'88';g.shadowBlur=26;g.shadowOffsetY=8;g.fillStyle=pg;g.beginPath();g.roundRect(W/2-pw/2,765,pw,104,52);g.fill();g.restore();g.strokeStyle='#fffaf0';g.lineWidth=4;g.beginPath();g.roundRect(W/2-pw/2+8,773,pw-16,88,44);g.stroke();g.fillStyle='#fffdf5';g.fillText(lab,W/2,837);
+  g.fillStyle='#3b2a00';var dt0=d.detail||'';if(dt0){var dsz=cfit(g,dt0,W-300,44,700,CSERIF,24);g.font='700 '+dsz+'px '+CSERIF;g.fillText(dt0,W/2,938)}
+  var ev=C.event||(GT()+' · '+GS());g.fillStyle='#5a4a22';var es=cfit(g,ev,W-500,32,700,CSANS,20);g.font='700 '+es+'px '+CSANS;g.fillText(ev,W/2,992);
+  // bottom: date | seal | signature
+  var dt=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}),LY=1102;
+  g.fillStyle='#3b2a00';g.font='700 30px '+CSANS;g.fillText(dt,350,LY-12);g.fillStyle=A;g.fillRect(350-170,LY,340,3);g.fillStyle='#5a4a22';g.font='600 24px '+CSANS;g.fillText('તારીખ / Date',350,LY+36);
+  var sg=C._sig,SX=W-350;
+  if(sg&&sg.width){var q=Math.min(330/sg.width,96/sg.height,3),sw2=sg.width*q,sh2=sg.height*q;g.drawImage(sg,SX-sw2/2,LY-sh2-4,sw2,sh2)}
+  else if(C.signer){g.fillStyle='#1f1400';var ss0=cfit(g,C.signer,330,44,700,CSERIF,22);g.font='italic 700 '+ss0+'px '+CSERIF;g.fillText(C.signer,SX,LY-14)}
+  g.fillStyle=A;g.fillRect(SX-170,LY,340,3);
+  if(sg&&sg.width&&C.signer){g.fillStyle='#1f1400';var ss=cfit(g,C.signer,340,34,800,CSERIF,20);g.font='800 '+ss+'px '+CSERIF;g.fillText(C.signer,SX,LY+34)}
+  g.fillStyle='#5a4a22';g.font='600 24px '+CSANS;g.fillText(C.org||'Host / Organizer',SX,LY+(sg&&sg.width&&C.signer?66:36));
+  // gold seal
+  var cx=W/2,cy=1100,R=74,pts=28;g.save();g.shadowColor='rgba(0,0,0,.3)';g.shadowBlur=14;g.shadowOffsetY=5;var sgd=g.createRadialGradient(cx-18,cy-20,6,cx,cy,R);sgd.addColorStop(0,'#fff3b0');sgd.addColorStop(.55,'#e0b030');sgd.addColorStop(1,'#a06f0a');g.fillStyle=sgd;g.beginPath();for(var i2=0;i2<pts*2;i2++){var a=i2*Math.PI/pts,r=i2%2?R-9:R;g.lineTo(cx+r*Math.sin(a),cy-r*Math.cos(a))}g.closePath();g.fill();g.restore();
+  g.strokeStyle='#fff3b0';g.lineWidth=3;g.beginPath();g.arc(cx,cy,R-20,0,7);g.stroke();g.fillStyle='#7a5200';g.font='900 56px '+CSANS;g.fillText('★',cx,cy+19);
+  g.fillStyle='#5a4a22';g.font='600 22px '+CSANS;g.fillText('Room: '+(d.code||''),cx,1196);
   return c}
- function certLoad(url){return new Promise(function(res){if(!url)return res(null);var i=new Image();i.onload=function(){res(i)};i.onerror=function(){res(null)};i.src=url})}
- var LOGO=null;
+ function certLoad(url,nodef){return new Promise(function(res){if(!url){if(nodef)return res(null);url='logo.png'}var i=new Image();i.onload=function(){res(i)};i.onerror=function(){res(null)};i.src=url})}
+ var LOGO=null,SIG=null;
  function cfgNow(){try{return JSON.parse(localStorage.getItem('certCfg')||'{}')}catch(e){return {}}}
- function certCanvas(d){return certDraw(d,cfgNow(),LOGO)}
- function prep(){var C=cfgNow();try{if(typeof socket!=='undefined'&&state&&state.code)socket.emit('host:setCert',{code:state.code,cert:C})}catch(e){}return certLoad(C.logo).then(function(i){LOGO=i})}
+ function certCanvas(d){var C=cfgNow();C._sig=SIG;return certDraw(d,C,LOGO)}
+ function prep(){var C=cfgNow();try{if(typeof socket!=='undefined'&&state&&state.code)socket.emit('host:setCert',{code:state.code,cert:C})}catch(e){}return Promise.all([certLoad(C.logo),certLoad(C.signImg,1)]).then(function(a){LOGO=a[0];SIG=a[1]})}
 
  function ascii(s){return s}
  function pdf(pages,pw,ph){ // pages: [{url (jpeg dataURL), w, h}] ; pw,ph in points
@@ -2969,7 +3008,7 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
  function zs(r){try{return zoneStats.length>=2?zoneStats(r,function(n){return playerResults(r,n)}):zoneStats(r)}catch(e){return []}}
  function reportPages(){var r=state.room,pg=[],W=1240,H=1754,ws=winners(),Z=zs(r)||[];
   function page(){var c=document.createElement('canvas');c.width=W;c.height=H;var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#4c1d95';g.fillRect(0,0,W,16);g.textAlign='left';pg.push(c);return g}
-  var g=page();g.fillStyle='#4c1d95';g.font='900 54px '+SERIF;g.fillText('જ્ઞાન શોધ – Event Report',80,130);g.fillStyle='#555';g.font='600 28px '+SANS;g.fillText((gameName()||'')+' · Room '+r.code+' · '+new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}),80,180);
+  var g=page();g.fillStyle='#4c1d95';g.font='900 54px '+SERIF;g.fillText(GT()+' · '+GS()+' – Event Report',80,130);g.fillStyle='#555';g.font='600 28px '+SANS;g.fillText((gameName()||'')+' · Room '+r.code+' · '+new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}),80,180);
   var np=Object.keys(r.players||{}).length,tiles=[['👥 Players',np],['🏘 Zones',Z.length],['❓ Questions',(r.usedIdx||[]).length+'/'+(r.questions||[]).length]];
   tiles.forEach(function(t,i){var x=80+i*370;g.fillStyle='#f3e8ff';g.beginPath();g.roundRect(x,230,340,150,24);g.fill();g.fillStyle='#4c1d95';g.font='900 56px '+SANS;g.textAlign='center';g.fillText(String(t[1]),x+170,310);g.font='600 26px '+SANS;g.fillText(t[0],x+170,356);g.textAlign='left'});
   g.fillStyle='#1f1400';g.font='900 38px '+SERIF;g.fillText('🏆 Winners',80,470);var y=520;
@@ -3025,5 +3064,75 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
   wb.xlsx.writeBuffer().then(function(b){ var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([b],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download='questions-template.xlsx'; document.body.appendChild(a); a.click(); a.remove(); }); };
 })();
 </script>
+<script id="up-ep-host">
+function GT(){ return 'જ્ઞાન શોધ'; } function GS(){ return 'THE EPILOGUE'; }
+function CK(k,d){ try{ var c=state.room&&state.room.colors; return (c&&c[k])||d; }catch(e){ return d; } }
+function ccHsl(hex){ var r=parseInt(hex.substr(1,2),16)/255,g=parseInt(hex.substr(3,2),16)/255,b=parseInt(hex.substr(5,2),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,h=0,s=0,d=mx-mn; if(d){ s=l>.5?d/(2-mx-mn):d/(mx+mn); h=mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4); h*=60; } return [Math.round(h),Math.round(s*100),Math.round(l*100)]; }
+function ccThemeVars(hex){ var a=ccHsl(hex),h=a[0],s=Math.max(45,a[1]),L=Math.min(52,Math.max(30,a[2])),r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16),H=function(x,y){return 'hsl('+h+','+x+'%,'+y+'%)'};
+  return {'--p':hex,'--pd':H(s,Math.max(14,L-14)),'--pl':H(Math.min(100,s+6),Math.min(80,L+16)),'--pdd':H(s,Math.max(18,L-8)),'--rg':r+','+g+','+b,'--pdk':H(95,82),'--bg':H(100,96),'--ink':H(45,16),'--muted':H(16,47),'--line':H(60,90)}; }
+var _thk=null;
+function ccApplyTheme(hex){ try{ hex=hex||''; if(hex===_thk) return; var first=(_thk===null); _thk=hex; if(first&&!hex) return; var st=document.documentElement.style,dark=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches;
+  ['--p','--pd','--pl','--pdd','--rg','--pdk','--bg','--ink','--muted','--line'].forEach(function(x){st.removeProperty(x)});
+  if(!hex) return; var v=ccThemeVars(hex); Object.keys(v).forEach(function(x){ if(dark&&['--bg','--ink','--muted','--line'].indexOf(x)>=0) return; st.setProperty(x,v[x]); }); }catch(e){} }
+/* ---- 🎨 Colour Studio (RGB / #HEX) — empty = original colours ---- */
+(function(){
+ var GR=[['🎨 મુખ્ય રંગ (બધે) — ખાલી = મૂળ રંગ',[['p','Game main colour','#7c3aed']]],
+  ['🎯 સંકલ્પ + પ્રતિજ્ઞા (Phone)',[['skb1','Background 1','#1e1b4b'],['skb2','Background 2','#4c1d95'],['skb3','Background 3','#9d174d'],['sk1a','Option 4 · રંગ 1','#06b6d4'],['sk1b','Option 4 · રંગ 2','#2563eb'],['sk2a','Option 6 · રંગ 1','#8b5cf6'],['sk2b','Option 6 · રંગ 2','#d946ef'],['sk3a','Option 8 · રંગ 1','#f59e0b'],['sk3b','Option 8 · રંગ 2','#ef4444']]],
+  ['🎡 કર્મ ચક્ર (Wheel)',[['kw0','🌱 આશીર્વાદ','#16a34a'],['kw1','⚖️ ન્યાય','#0ea5e9'],['kw2','Segment 3','#7c3aed'],['kw3','Segment 4','#64748b'],['kw4','Segment 5','#dc2626'],['kw5','Segment 6','#f59e0b'],['kb1','Phone bg 1','#5b21b6'],['kb2','Phone bg 2','#1e1b4b'],['kb3','Phone bg 3','#0b0720']]],
+  ['📺 Projector Heading',[['pjs1','સંકલ્પ · રંગ 1','#7c3aed'],['pjs2','સંકલ્પ · રંગ 2','#db2777'],['pjk1','કર્મ ચક્ર · રંગ 1','#f59e0b'],['pjk2','કર્મ ચક્ર · રંગ 2','#dc2626']]]];
+ var T={},tmr=null;
+ function ld(){ try{ var j=JSON.parse(localStorage.getItem('epColors')||'null'); return j&&typeof j==='object'?j:{}; }catch(e){ return {}; } }
+ window.epColors=function(){ return Object.keys(T).length?T:null; };
+ function save(){ try{ localStorage.setItem('epColors',JSON.stringify(T)); }catch(e){} clearTimeout(tmr); tmr=setTimeout(function(){ try{ if(state&&state.code) socket.emit('host:setColors',{code:state.code,colors:T}); }catch(e){} },350); try{ if(state&&state.room){ state.room.colors=Object.keys(T).length?Object.assign({},T):null; } ccApplyTheme(T.p||''); if(typeof render==='function') {} }catch(e){} }
+ function hx(v){ v=String(v||'').trim(); if(v[0]!=='#') v='#'+v; if(/^#[0-9a-fA-F]{3}$/.test(v)) v='#'+v[1]+v[1]+v[2]+v[2]+v[3]+v[3]; return /^#[0-9a-fA-F]{6}$/.test(v)?v.toLowerCase():null; }
+ function h2(n){ n=Math.max(0,Math.min(255,n|0)); return (n<16?'0':'')+n.toString(16); }
+ function row(k,lb,d){ var c=T[k]||d,r=parseInt(c.substr(1,2),16),g=parseInt(c.substr(3,2),16),b=parseInt(c.substr(5,2),16),set=!!T[k];
+  return '<div class="cs-r" data-k="'+k+'" data-d="'+d+'"><div class="cs-l">'+lb+(set?' <i class="cs-on">● બદલેલ</i>':'')+'</div><div class="cs-t"><input type="color" class="cs-pk" value="'+c+'"><input type="text" class="cs-hx" maxlength="7" value="'+c+'" placeholder="#RRGGBB" spellcheck="false"><button type="button" class="cs-un" title="મૂળ રંગ">↺</button></div>'+
+  ['R','G','B'].map(function(n,i){ return '<label class="cs-s '+n+'"><b>'+n+'</b><input type="range" min="0" max="255" value="'+[r,g,b][i]+'"><output>'+[r,g,b][i]+'</output></label>'; }).join('')+'</div>'; }
+ function build(w){ w.innerHTML='<div class="cs-h"><b>🎨 Colour Studio (RGB)</b><button class="cs-x" type="button">✕</button></div><div class="muted" style="font-size:.8rem;margin-bottom:6px">Game na rang pehla jevā j che. Badalvu hoy to RGB sliders athva #HEX code lakho — Players ane Projector par live apply thase. ↺ = mool rang.</div>'+GR.map(function(g,gi){ return '<details'+(gi===0?' open':'')+' class="cs-g"><summary>'+g[0]+'</summary>'+g[1].map(function(x){return row(x[0],x[1],x[2]);}).join('')+'</details>'; }).join('')+'<div class="cs-f"><button type="button" class="cs-rs">↺ બધા રંગ મૂળ કરો</button></div>';
+  var op=[]; w.querySelectorAll('details').forEach(function(d){ op.push(d.open); });
+  w.querySelector('.cs-x').onclick=function(){ w.classList.remove('open'); };
+  w.querySelector('.cs-rs').onclick=function(){ T={}; save(); build(w); };
+  w.querySelectorAll('.cs-r').forEach(function(rw){ var k=rw.dataset.k,d=rw.dataset.d,pk=rw.querySelector('.cs-pk'),tx=rw.querySelector('.cs-hx'),sl=rw.querySelectorAll('input[type=range]'),lb=rw.querySelector('.cs-l');
+   function mark(){ if(!lb.querySelector('.cs-on')) lb.insertAdjacentHTML('beforeend',' <i class="cs-on">● બદલેલ</i>'); }
+   function sync(c,skip){ if(skip!=='pk') pk.value=c; if(skip!=='tx') tx.value=c; if(skip!=='sl'){ for(var i=0;i<3;i++){ var v=parseInt(c.substr(1+i*2,2),16); sl[i].value=v; sl[i].nextElementSibling.textContent=v; } } }
+   function put(c){ T[k]=c; save(); mark(); }
+   pk.oninput=function(){ sync(pk.value,'pk'); put(pk.value); };
+   tx.oninput=function(){ var c=hx(tx.value); if(c){ tx.classList.remove('bad'); sync(c,'tx'); put(c); } else tx.classList.add('bad'); };
+   sl.forEach(function(s){ s.oninput=function(){ var c='#'+h2(sl[0].value)+h2(sl[1].value)+h2(sl[2].value); sl.forEach(function(q){ q.nextElementSibling.textContent=q.value; }); pk.value=c; tx.value=c; tx.classList.remove('bad'); put(c); }; });
+   rw.querySelector('.cs-un').onclick=function(){ delete T[k]; save(); sync(d); var o=lb.querySelector('.cs-on'); if(o) o.remove(); }; }); }
+ function init(){ T=ld(); if(T.p) ccApplyTheme(T.p);
+  var w=document.createElement('div'); w.id='hcol'; w.innerHTML='<button type="button" aria-label="Colours">🌈</button><div class="cstu"></div>'; document.body.appendChild(w);
+  var pn=w.querySelector('.cstu'); w.querySelector('button').onclick=function(){ if(!pn.classList.contains('open')) build(pn); pn.classList.toggle('open'); };
+  setInterval(function(){ try{ var on=!!(state.code&&state.room); w.style.display=on?'block':'none'; ['hthm','hproj','hhof','htool'].forEach(function(i){ var e=document.getElementById(i); if(e) e.style.display=(typeof hostLoggedIn!=='undefined'&&hostLoggedIn)?'':'none'; });
+    var r=state.room; if(r&&state.code&&window.__ckc!==state.code){ window.__ckc=state.code; if(Object.keys(T).length&&JSON.stringify(r.colors||null)!==JSON.stringify(T)) socket.emit('host:setColors',{code:state.code,colors:T}); }
+    if(r&&!Object.keys(T).length&&r.colors&&r.colors.p) ccApplyTheme(r.colors.p); }catch(e){} },400); }
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+ var _e=socket.emit.bind(socket);
+ socket.emit=function(ev,data){ if(ev==='host:create'&&data&&typeof data==='object'){ try{ var t=window.epColors(); if(t) data.colors=t; }catch(e){} } return _e.apply(null,arguments); };
+})();
+/* ---- ✨ Premium host hero ---- */
+(function(){ var _r=render; render=function(){ _r.apply(this,arguments); try{ var app=document.getElementById('app'); if(!app) return; var o=document.getElementById('ephero'); if(o) o.remove(); var d=document.createElement('div'); d.id='ephero'; var big=!state.code; d.className=big?'big':''; d.innerHTML='<img src="logo.png" alt=""><div class="eh-t"><div class="eh-a">'+GT()+'</div><div class="eh-b">'+GS()+'</div></div><div class="eh-l"></div>'; app.insertBefore(d,app.firstChild); }catch(e){} }; try{ render(); }catch(e){} })();
+</script>
+<style id="up-ep-host-css">
+#ephero{position:relative;display:flex;align-items:center;gap:14px;padding:12px 16px;margin:0 0 14px;border-radius:20px;background:radial-gradient(500px 160px at 8% 0%,rgba(212,160,90,.30),transparent 70%),linear-gradient(135deg,#071f17,#0b3a2a 55%,#12261f);color:#fff;box-shadow:0 12px 30px rgba(7,31,23,.35),inset 0 0 0 1px rgba(232,178,146,.45);overflow:hidden}
+#ephero img{width:64px;height:64px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5));flex:none}
+#ephero.big{flex-direction:column;text-align:center;padding:22px 16px}#ephero.big img{width:min(36vw,150px);height:auto}
+#ephero .eh-a{font-family:'Noto Serif Gujarati','Playfair Display',serif;font-weight:900;font-size:1.5rem;line-height:1.15;background:linear-gradient(180deg,#fff2de,#e8b292 60%,#c8875f);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+#ephero .eh-b{font-family:'Cinzel','Playfair Display',serif;font-weight:700;letter-spacing:.34em;font-size:.72rem;color:#e8b292;margin-top:3px}
+#ephero .eh-l{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,#e8b292,#fff2de,#e8b292,transparent)}
+.card{box-shadow:0 10px 28px rgba(42,33,80,.10)}
+#hcol{display:none;position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));z-index:71}
+#hcol>button{width:46px;height:46px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#e8b292,#b9774f);color:#fff;font-size:1.2rem;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}
+#hcol .cstu{display:none;position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 56px);width:min(380px,calc(100vw - 24px));max-height:78vh;overflow:auto;background:var(--card,#fff);color:var(--ink);border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.35);padding:14px}
+#hcol .cstu.open{display:block}
+.cs-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.cs-x{border:0;background:none;font-size:1.1rem;cursor:pointer;color:inherit}
+.cs-g{border-top:1px solid var(--line);padding:6px 0}.cs-g summary{cursor:pointer;font-weight:800;font-size:.88rem;padding:4px 0}
+.cs-r{padding:6px 0 8px}.cs-l{font-weight:700;font-size:.8rem;margin-bottom:3px}.cs-on{color:#16a34a;font-style:normal;font-size:.7rem}
+.cs-t{display:flex;gap:6px;align-items:center;margin-bottom:3px}.cs-pk{width:42px;height:32px;padding:0;border:0;background:none;cursor:pointer;margin:0}.cs-hx{flex:1;margin:0!important;font-family:monospace;padding:6px!important}.cs-hx.bad{border-color:#dc2626!important}
+.cs-un{border:1px solid var(--line);background:none;border-radius:8px;width:32px;height:32px;cursor:pointer;color:inherit}
+.cs-s{display:flex;align-items:center;gap:6px;font-size:.74rem}.cs-s b{width:12px}.cs-s input{flex:1;margin:0;padding:0;width:auto;accent-color:#7c3aed}.cs-s.R input{accent-color:#ef4444}.cs-s.G input{accent-color:#22c55e}.cs-s.B input{accent-color:#3b82f6}.cs-s output{width:26px;text-align:right}
+.cs-f{border-top:1px solid var(--line);padding-top:8px}.cs-rs{border:1.5px solid var(--line);background:none;border-radius:10px;padding:6px 12px;font-weight:800;cursor:pointer;color:inherit}
+</style>
 </body>
 </html>

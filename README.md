@@ -1,3 +1,14 @@
+## ✨ Epilogue Update (Logo · Premium Intro · Premium Certificate · RGB Colours)
+**Upload:** `server.js`, `host.html`, `player.html`, `logo.png` (navi file).
+
+- **Player link:** open karta j logo dekhay; pachhi Name, Avatar, Zone, Room Code nakhi ne Join.
+- **Join pachhi:** premium logo intro (music sathe, tap karine skip) → pachhi card.
+- **Certificate premium:** emerald + rose-gold frame, gold seal, logo watermark, date ane Host signature (upload athva haath thi draw). Host Tools ma badhu edit thay.
+- **Host page premium:** upar logo vali hero banner. Floating buttons (🛠 🏛 📺 🎨 🌈) login pachhi j dekhay.
+- **Colours:** Game ane Sankalp / Pratigya / Karma Chakra na rang **badlyā nathi**. Host ma 🌈 button → RGB sliders athva #HEX code lakhi ne rang badli shakay (↺ = mool rang). Players ane Projector par live apply thay.
+
+---
+
 ## 🆕 Epilogue: 3 Mode + Divine Book
 - Mode-1/2/3 (12-12-12), Card 8+8+9, Divine Book 'Swami ni Vato', Projector side panel + timer
 Upload only: server.js, host.html, player.html

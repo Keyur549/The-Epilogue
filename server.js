@@ -146,7 +146,7 @@ function mystReward(room, name, qi){ let h=7; const t=(room.code||'')+'|'+name+'
 const ZM_MIN = 2;                              // Zone Madad needs at least this many OTHER zone-mates who already answered
 const GEM_PTS=10, STAR_PTS=3, BOMB_EXTRA=-2;   // hidden cells (only matter when the answer is CORRECT, except the bomb: wrong answer)
 const SANK_SEC=60;
-const SANK=[4,6,8], SANK_PTS=[5,10,15], SANK_PEN=[-2,-5,-7], PRAT_PCT=0.70, PRAT_PTS=10, PRAT_PEN=-10;
+const SANK=[4,6,8], SANK_PTS=[5,10,15], SANK_PEN=[-2,-5,-7], PRAT_PCT=0.60, PRAT_PTS=10, PRAT_PEN=-10;
 function modeComplete(room,m){ return room.usedIdx.some(i=>(room.questions[i].m||1)===m) && !room.questions.some((q,i)=>(q.m||1)===m && !room.usedIdx.includes(i)); }
 const KARMA=['ashirvad','nyay','zadap','toofan','prakash','agni'];   // same order as the host wheel
 function modeStats(room,m){

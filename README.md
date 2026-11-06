@@ -1,3 +1,7 @@
+## Update
+- Pratigya: Zone success limit 70% → **60%**.
+- Projector: Zone Full House winner shows claim time + players; Zone Winner shows Average Score (also in final all-winners grid). Total 11 winners.
+
 ## ✨ Epilogue Update (Logo · Premium Intro · Premium Certificate · RGB Colours)
 **Upload:** `server.js`, `host.html`, `player.html`, `logo.png` (navi file).
 

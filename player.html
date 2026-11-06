@@ -348,7 +348,7 @@ function mstageHTML(r){
     <div style="height:8px;border-radius:99px;background:rgba(255,255,255,.2);margin:12px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,#34d399,#fde047,#f87171);transition:width 1s linear"></i></div><div style="font-weight:900;color:${left<=10?'#fca5a5':'#fde68a'}">⏱ ${closed?'સમય પૂરો':left+' સેકન્ડ'}</div>
     <div style="display:flex;gap:10px;margin:14px 0">${btns}</div>
     <div style="font-weight:800;color:${my?'#86efac':'#fde68a'}">${my?`🔒 તમારો સંકલ્પ: ${my} સાચા જવાબ`:(closed?'⌛ તમે સંકલ્પ લીધો નથી (−2 સજા)':'👆 એક પસંદ કરો')}</div>
-    <div style="margin-top:10px;font-size:.82rem;opacity:.9;background:rgba(255,255,255,.12);border-radius:12px;padding:8px">🏛 તમારા Zone ના 70% કે વધુ Players સંકલ્પ પાળે તો આખા Zone ને +10, ઓછા પાળે તો Zone ના દરેકને −10<br>⚠️ સંકલ્પ ન લો તો સૌથી નાના સંકલ્પ (4) ની સજા −2<br>પરિણામ છેલ્લે Result માં ખૂલશે</div></div>`; }
+    <div style="margin-top:10px;font-size:.82rem;opacity:.9;background:rgba(255,255,255,.12);border-radius:12px;padding:8px">🏛 તમારા Zone ના 60% કે વધુ Players સંકલ્પ પાળે તો આખા Zone ને +10, ઓછા પાળે તો Zone ના દરેકને −10<br>⚠️ સંકલ્પ ન લો તો સૌથી નાના સંકલ્પ (4) ની સજા −2<br>પરિણામ છેલ્લે Result માં ખૂલશે</div></div>`; }
   const m=r.chakraFor, ki=(r.karmaKeys||{})[m], has=ki!=null&&ki>=0;
   const COL=['#16a34a','#0ea5e9','#7c3aed','#64748b','#dc2626','#f59e0b'].map((c,i)=>CK('kw'+i,c)), seg=360/6, nK=6;
   const conic='conic-gradient('+COL.map((c,i)=>c+' '+(i*seg)+'deg '+((i+1)*seg)+'deg').join(',')+')';

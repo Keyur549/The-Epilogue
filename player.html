@@ -173,7 +173,7 @@ input:focus,select:focus{outline:none;border-color:var(--pl);box-shadow:0 0 0 3p
 .emb-tumble{transform-box:fill-box;transform-origin:center;animation:embTumble 3.6s ease-in-out infinite}@keyframes embTumble{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(10deg) translateY(-2px)}}
 @keyframes kwspin{from{transform:rotate(0)}to{transform:rotate(var(--rot))}}@keyframes kwSlow{to{transform:rotate(360deg)}}@keyframes kwGlow{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.08)}}@keyframes kwPop{from{opacity:0;transform:scale(.2) rotate(-30deg)}to{opacity:1;transform:none}}
 </style>
-<style>.cell{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}</style>
+<style>.cell{overflow-wrap:anywhere;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}</style>
 </head>
 <body>
 <div class="wrap" id="app">Loading…</div>
@@ -1174,8 +1174,15 @@ function render0(){
 }
 /* tap-safe rendering: never rebuild the screen while a finger is down on a cell/button (this was eating taps) */
 var __press=0,__pend=false,__pt=null;
-function render(){ if(__press){ __pend=true; return; } render0(); }
-function __prel(){ if(!__press) return; __press=0; clearTimeout(__pt); if(__pend){ __pend=false; render0(); } }
+/* long answers used to be cut off inside the small cells: shrink each cell's text until the whole answer is visible */
+function __fit(){ try{ document.querySelectorAll('.cell').forEach(function(c){
+  var base=parseFloat(getComputedStyle(c).fontSize)||12.8; c.style.fontSize=''; base=parseFloat(getComputedStyle(c).fontSize)||base;
+  var over=function(){ return c.scrollHeight>c.clientHeight+1||c.scrollWidth>c.clientWidth+1; };
+  c.style.lineHeight='1.1'; c.style.overflowWrap='normal';
+  var fs=base,n=0; while(n++<30&&fs>9&&over()){ fs-=0.4; c.style.fontSize=fs+'px'; }
+  if(over()){ c.style.overflowWrap='anywhere'; fs=base; c.style.fontSize=fs+'px'; n=0; while(n++<40&&fs>7&&over()){ fs-=0.4; c.style.fontSize=fs+'px'; } } }); }catch(e){} }
+function render(){ if(__press){ __pend=true; return; } render0(); __fit(); }
+function __prel(){ if(!__press) return; __press=0; clearTimeout(__pt); if(__pend){ __pend=false; render0(); __fit(); } }
 document.addEventListener('pointerdown',function(e){ var t=e.target; if(t&&t.closest&&t.closest('.cell,button,[onclick]')){ __press=1; clearTimeout(__pt); __pt=setTimeout(__prel,1800); } },true);
 ['pointerup','pointercancel','touchend','touchcancel','mouseup','dragend'].forEach(function(ev){ window.addEventListener(ev,function(){ setTimeout(__prel,150); },true); });
 setInterval(()=>{ if(state.room && state.room.status==='question') render(); },1000);

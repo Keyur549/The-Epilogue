@@ -519,6 +519,7 @@ function bindName(socket, r, code, clientId, key, token){
 io.use((socket, next) => next());
 setInterval(() => { const cut = Date.now() - 48*3600*1000; for (const c of Object.keys(rooms)) if ((rooms[c].createdAt||Date.now()) < cut) delete rooms[c]; }, 3600*1000);
 io.on('connection', (socket) => {
+  socket.on('time:sync', (x, cb) => { if(typeof cb==='function') cb(Date.now()); });
   let _n = 0, _t = Date.now();
   socket.use((pkt, next) => { const now = Date.now(); if (now-_t>1000){ _t=now; _n=0; } if (++_n>60) return; next(); });
   socket.on('subscribe', ({code, host, clientId, key, token}, cb) => {

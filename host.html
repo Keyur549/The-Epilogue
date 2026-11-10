@@ -2845,7 +2845,7 @@ function pvAnnounce(r){var O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[]
    return head+'<div class="pjs">પ્રશ્ન '+n+(r.round!=null?' · Round '+((r.round||0)+1):'')+'</div><div class="pjq">'+esc2(twText(r,q.q||''))+'</div>'+(q.img?'<img class="pjimg" src="'+esc2(q.img)+'" onerror="this.style.display=\'none\'">':'')+'<div class="pjt'+(rem<=5&&st==='question'?' lo':'')+'">'+(st==='locked'?'⏹':(r.paused?'⏸ ':'')+rem)+'</div>'+bars(r)}
   if(st==='revealed'){var w=r.winners||{},step=r.revealStep||0,O=(typeof WINNER_ORDER!=='undefined')?WINNER_ORDER:[];
    if(step>=1&&step<=O.length){var k=O[step-1],nm=w[k],isZ=(k==='zone'||k==='zonefull'),pd=(nm&&!isZ&&r.players)?r.players[nm]:null;
-    return head+'<div class="pjw"><div class="pjc">👑</div><div class="pjl">'+esc2((typeof WINNER_LABELS!=='undefined'&&WINNER_LABELS[k])||k)+'</div><div class="pjav">'+(isZ?(nm?'🏅':'❓'):(pd?avHTML(pd.avatar):'❓'))+'</div><div class="pjname">'+(nm?esc2(nm):'કોઈ Winner નથી')+'</div>'+(pd&&pd.zone?'<div class="pjzn">📍 '+esc2(pd.zone)+'</div>':'')+(w[k+'_score']!=null?'<div class="pjsc">🎯 '+w[k+'_score']+'</div>':'')+(k==='zone'&&w.zone_avg!=null?'<div class="pjsc">📊 Average Score: '+w.zone_avg+'<small style="display:block;font-size:.5em;opacity:.8">'+(w.zone_count?'👥 '+w.zone_count+' Players · ':'')+(w.zone_total!=null?'કુલ '+w.zone_total:'')+'</small></div>':'')+(k==='zonefull'&&w.zonefull_count?'<div class="pjzn">👥 '+w.zonefull_count+' Players</div>':'')+'</div>'}
+    return '<div class="pjw"><div class="pjc">👑</div><div class="pjl">'+esc2((typeof WINNER_LABELS!=='undefined'&&WINNER_LABELS[k])||k)+'</div><div class="pjav">'+(isZ?(nm?'🏅':'❓'):(pd?avHTML(pd.avatar):'❓'))+'</div><div class="pjname">'+(nm?esc2(nm):'કોઈ Winner નથી')+'</div>'+(pd&&pd.zone?'<div class="pjzn">📍 '+esc2(pd.zone)+'</div>':'')+(w[k+'_score']!=null?'<div class="pjsc">🎯 '+w[k+'_score']+'</div>':'')+(k==='zone'&&w.zone_avg!=null?'<div class="pjsc">📊 Average Score: '+w.zone_avg+'<small style="display:block;font-size:.5em;opacity:.8">'+(w.zone_count?'👥 '+w.zone_count+' Players · ':'')+(w.zone_total!=null?'કુલ '+w.zone_total:'')+'</small></div>':'')+(k==='zonefull'&&w.zonefull_count?'<div class="pjzn">👥 '+w.zonefull_count+' Players</div>':'')+'</div>'}
    if(step>O.length)return head+'<div class="pjs">🏆 બધા Winners</div><div class="pjg">'+O.map(function(k){var nm=w[k],isZ=(k==='zone'||k==='zonefull'),pd=(nm&&!isZ&&r.players)?r.players[nm]:null;return '<div class="pjt2"><small>'+esc2((typeof WINNER_LABELS!=='undefined'&&WINNER_LABELS[k])||k)+'</small><b>'+(isZ?(nm?'🏅':'—'):(pd?avHTML(pd.avatar):'—'))+'</b><span>'+(nm?esc2(nm):'—')+'</span>'+(k==='zone'&&w.zone_avg!=null?'<small>📊 Avg '+w.zone_avg+'</small>':'')+(k==='zonefull'&&w.zonefull_ms!=null?'<small>⏱ '+esc2(fmtDur(w.zonefull_ms))+'</small>':'')+'</div>'}).join('')+'</div>';
    return head+'<div class="pjbig">🏆</div><div class="pjs">Result તૈયાર છે…</div>'}
   if(st==='ended')return head+'<div class="pjbig">🙏</div><div class="pjs">રમત પૂરી — Result ટૂંક સમયમાં</div>';
@@ -3134,5 +3134,19 @@ function ccApplyTheme(hex){ try{ hex=hex||''; if(hex===_thk) return; var first=(
 .cs-s{display:flex;align-items:center;gap:6px;font-size:.74rem}.cs-s b{width:12px}.cs-s input{flex:1;margin:0;padding:0;width:auto;accent-color:#7c3aed}.cs-s.R input{accent-color:#ef4444}.cs-s.G input{accent-color:#22c55e}.cs-s.B input{accent-color:#3b82f6}.cs-s output{width:26px;text-align:right}
 .cs-f{border-top:1px solid var(--line);padding-top:8px}.cs-rs{border:1.5px solid var(--line);background:none;border-radius:10px;padding:6px 12px;font-weight:800;cursor:pointer;color:inherit}
 </style>
+<script id="up-clock">
+/* Server-clock sync: every phone/laptop uses the SAME clock (server time), so timers & number reveal match exactly */
+(function(){
+  var RAW=Date.now.bind(Date),SK=0,best=1e9,n=0;
+  Date.now=function(){ return RAW()+SK; };
+  window.__srvSkew=function(){ return SK; };
+  function sample(){ try{ var t0=RAW(); socket.emit('time:sync',null,function(st){ if(typeof st!=='number') return; var t1=RAW(),rtt=t1-t0,off=st+rtt/2-t1;
+      if(n<6||rtt<=best*1.5+30){ if(rtt<best) best=rtt; SK=(n<3)?off:Math.round(SK*.5+off*.5); n++; } }); }catch(e){} }
+  function burst(){ best=1e9; n=0; for(var i=0;i<6;i++) setTimeout(sample,i*250); }
+  try{ socket.on('connect',burst); if(socket.connected) burst(); }catch(e){}
+  setInterval(sample,20000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) burst(); });
+})();
+</script>
 </body>
 </html>

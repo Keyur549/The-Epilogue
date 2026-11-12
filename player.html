@@ -293,10 +293,10 @@ function uiJoinRoom(){
   const name=document.getElementById('joinName').value.trim();
   const zone=document.getElementById('joinZone').value.trim();
   const avatar=document.getElementById('joinAvatar').value;
-  const keepForm=()=>{ render(); document.getElementById('joinName').value=name; document.getElementById('joinZone').value=zone; document.getElementById('joinAvatar').value=avatar; document.getElementById('joinCode').value=code; };
+  const keepForm=()=>{ render(); document.getElementById('joinName').value=name; document.getElementById('joinZone').value=zone; document.getElementById('joinAvatar').value=avatar; document.getElementById('joinCode').value=code; try{zoneSync(zone)}catch(e){} };
   const code=document.getElementById('joinCode').value.trim().toUpperCase();
   if(!name){ state.joinErr='તમારું નામ નાખો.'; keepForm(); return; }
-  if(!zone){ state.joinErr='Zone નું નામ નાખો.'; keepForm(); return; }
+  if(!zone){ state.joinErr='Zone પસંદ કરો (અથવા "અન્ય Zone" માં નામ લખો).'; keepForm(); return; }
   state.profile={name,avatar,zone};
   try{ window.showLogoSplash&&showLogoSplash(name); }catch(e){}
   socket.emit('player:join',{code,name,zone,avatar,clientId:getClientId(),token:(function(){const q=sess(); return q&&q.code===code&&String(q.name||'').trim().toLowerCase()===name.toLowerCase()&&String(q.zone||'').trim().toLowerCase()===zone.toLowerCase()?q.token:undefined;})()},(res)=>{
@@ -1345,6 +1345,32 @@ setInterval(function(){ try{ var c=state.room&&state.room.colors; ccApplyTheme(c
   try{ socket.on('connect',burst); if(socket.connected) burst(); }catch(e){}
   setInterval(sample,20000);
   document.addEventListener('visibilitychange',function(){ if(!document.hidden) burst(); });
+})();
+</script>
+
+<script id="up-zones">
+(function(){
+  var DEF=['શક્તિનાથ','ભોલાવ','મંગલદીપ','ઝાડેશ્વર','અંકલેશ્વર'], Z=DEF.slice(), OTHER='__other__', tm=null, last='';
+  function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+  function canon(v){ v=String(v||'').trim().toLowerCase(); for(var i=0;i<Z.length;i++) if(Z[i].toLowerCase()===v) return Z[i]; return null; }
+  function fill(sel){ sel.innerHTML='<option value="">📍 તમારો Zone પસંદ કરો</option>'+Z.map(function(z){return '<option value="'+esc(z)+'">'+esc(z)+'</option>'}).join('')+'<option value="'+OTHER+'">➕ અન્ય Zone (જાતે લખો)</option>'; }
+  window.zoneSync=function(v){ var sel=document.getElementById('joinZoneSel'), inp=document.getElementById('joinZone'); if(!sel||!inp) return; fill(sel); v=String(v==null?inp.value:v).trim();
+    var c=canon(v);
+    if(c){ sel.value=c; inp.value=c; inp.style.display='none'; }
+    else if(v){ sel.value=OTHER; inp.value=v; inp.style.display=''; }
+    else { sel.value=''; inp.value=''; inp.style.display='none'; } };
+  function fetchZ(){ var c=document.getElementById('joinCode'); if(!c) return; var code=c.value.trim().toUpperCase(); if(code.length<4||code===last) return; last=code;
+    try{ fetch('/api/zones/'+encodeURIComponent(code)).then(function(r){return r.json()}).then(function(j){ if(j&&j.ok&&Array.isArray(j.zones)&&j.zones.length){ Z=j.zones; var inp=document.getElementById('joinZone'); window.zoneSync(inp?inp.value:''); } }).catch(function(){}); }catch(e){} }
+  function mount(){ var inp=document.getElementById('joinZone'); if(!inp||document.getElementById('joinZoneSel')) return;
+    var sel=document.createElement('select'); sel.id='joinZoneSel'; inp.parentNode.insertBefore(sel,inp);
+    var code=document.getElementById('joinCode'); if(code){ sel.parentNode.insertBefore(code,sel); code.addEventListener('input',function(){ clearTimeout(tm); tm=setTimeout(function(){ last=''; fetchZ(); },300); }); }
+    inp.placeholder='તમારા Zone નું નામ લખો';
+    sel.onchange=function(){ if(sel.value===OTHER){ inp.value=''; inp.style.display=''; try{inp.focus()}catch(e){} } else if(sel.value){ inp.value=sel.value; inp.style.display='none'; } else { inp.value=''; inp.style.display='none'; } };
+    var pz=''; try{ pz=(state.profile&&state.profile.zone)||''; }catch(e){}
+    window.zoneSync(inp.value||pz); last=''; fetchZ(); }
+  var _r0=render0;
+  render0=function(){ _r0.apply(this,arguments); try{ if(!state.code) mount(); }catch(e){} };
+  try{ if(!state.code) mount(); }catch(e){}
 })();
 </script>
 </body>

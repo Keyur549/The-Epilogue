@@ -3148,5 +3148,52 @@ function ccApplyTheme(hex){ try{ hex=hex||''; if(hex===_thk) return; var first=(
   document.addEventListener('visibilitychange',function(){ if(!document.hidden) burst(); });
 })();
 </script>
+
+<script id="up-zones">
+(function(){
+  var DEF=['શક્તિનાથ','ભોલાવ','મંગલદીપ','ઝાડેશ્વર','અંકલેશ્વર'], KEY='gsZones', draft=null;
+  function load(){ try{ var v=JSON.parse(localStorage.getItem(KEY)||'null'); if(Array.isArray(v)&&v.length) return v.map(String); }catch(e){} return DEF.slice(); }
+  var createList=load();
+  function clean(a){ var seen={},o=[]; (a||[]).forEach(function(v){ var s=String(v==null?'':v).replace(/\s+/g,' ').trim().slice(0,40),k=s.toLowerCase(); if(s&&!seen[k]){seen[k]=1;o.push(s);} }); return o; }
+  function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+  function build(live){
+    var list = live ? (draft ? draft.slice() : ((state.room&&state.room.zones&&state.room.zones.length)?state.room.zones.slice():DEF.slice())) : createList.slice();
+    var d=document.createElement('details'); d.id='zncard'; d.className='card'; d.style.cssText='margin:8px 0;background:linear-gradient(135deg,#fff7ed,#f5f3ff)';
+    d.innerHTML='<summary style="cursor:pointer;font-weight:800;font-size:1.05rem">📍 Zone નાં નામ (Player ના Drop-down માં દેખાશે)</summary>'
+      +'<div class="muted" style="margin:6px 0">Host અહીં Zone નાં નામ જાતે લખે. Player Join વખતે આ યાદીમાંથી પસંદ કરશે. યાદીમાં છેલ્લે <b>"અન્ય Zone (જાતે લખો)"</b> નો option આપોઆપ રહેશે.</div>'
+      +'<div id="znrows"></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px"><button type="button" class="btn secondary" id="znadd">➕ Zone Add કરો</button><button type="button" class="btn ghost" id="znreset">↺ Default નામ</button>'+(live?'<button type="button" class="btn" id="znsave">💾 Save</button>':'')+'<span id="znmsg" class="muted"></span></div>';
+    var rows=d.querySelector('#znrows');
+    function sync(){ if(live){ draft=list.slice(); } else { createList=list.slice(); try{localStorage.setItem(KEY,JSON.stringify(clean(list)))}catch(e){} } }
+    function paint(fi){ rows.innerHTML=''; list.forEach(function(v,i){ var r=document.createElement('div'); r.style.cssText='display:flex;gap:6px;align-items:center;margin:4px 0';
+        r.innerHTML='<b style="min-width:26px;text-align:center">'+(i+1)+'</b><input maxlength="40" placeholder="Zone નું નામ" value="'+esc(v)+'" style="margin:0;flex:1"><button type="button" class="btn ghost" style="margin:0;padding:8px 12px" title="કાઢી નાખો">✕</button>';
+        var inp=r.querySelector('input'); inp.oninput=function(){ list[i]=inp.value; sync(); };
+        r.querySelector('button').onclick=function(){ list.splice(i,1); sync(); paint(); };
+        rows.appendChild(r); });
+      if(fi!=null){ var ins=rows.querySelectorAll('input'); if(ins[fi]) ins[fi].focus(); } }
+    paint();
+    d.querySelector('#znadd').onclick=function(){ list.push(''); sync(); paint(list.length-1); };
+    d.querySelector('#znreset').onclick=function(){ list=DEF.slice(); sync(); paint(); };
+    if(live){ d.querySelector('#znsave').onclick=function(){ var z=clean(list), m=d.querySelector('#znmsg'); if(!z.length){ m.textContent='⚠️ ઓછામાં ઓછું 1 Zone જોઈએ'; return; }
+      socket.emit('host:setZones',{code:state.code,zones:z},function(x){ if(x&&x.ok){ draft=null; list=z.slice(); paint(); m.textContent='✅ Save થયું ('+z.length+' Zone)'; } else m.textContent='⚠️ Save ન થયું'; }); }; }
+    return d;
+  }
+  var _e=socket.emit;
+  socket.emit=function(ev,data){ if(ev==='host:create'&&data&&typeof data==='object'){ var z=clean(createList); if(z.length) data.zones=z; } return _e.apply(socket,arguments); };
+  var _r=render;
+  render=function(){
+    var old=document.getElementById('zncard');
+    if(old&&old.contains(document.activeElement)) return;   // never wipe what the host is typing
+    var wasOpen=old?old.open:null;
+    _r.apply(this,arguments);
+    try{ var app=document.getElementById('app'); if(!app) return;
+      var mp=document.getElementById('maxPlayers');
+      if(mp&&!state.room){ var d=build(false); d.open=(wasOpen==null)?true:wasOpen; mp.parentNode.insertBefore(d,mp.nextSibling); }
+      else if(state.code&&state.room&&state.room.status==='lobby'){ var d2=build(true); d2.open=(wasOpen==null)?false:wasOpen; var cs=app.querySelectorAll('.card'); var at=cs.length>1?cs[1].nextSibling:null; app.insertBefore(d2,at); }
+    }catch(e){}
+  };
+  try{ render(); }catch(e){}
+})();
+</script>
 </body>
 </html>

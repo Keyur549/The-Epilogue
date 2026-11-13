@@ -258,12 +258,13 @@ function zoneCompute(r, full){
       const q = r.questions[qi]; if (!q || q.a===undefined) continue;
       const act = z.names.filter(n=>first[n]<=pos[qi]).length;       // active AT that question, so a lock never changes later
       let safe=false; const cnt={};
-      for (const n of z.names){ const p=r.players[n]; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1; }
-        if (p.lives && (p.lives.safety===qi || (p.lifeOld && p.lifeOld.safety && p.lifeOld.safety.includes(qi)))) safe=true; }
-      const need = zoneNeed(r, act, safe); const ts = closeTs(r, qi); let any=false;
+      // ➕ Extra Vote (key 'safety'): the Player who used it counts as 2 votes for his own answer on THAT question. Max +1 per Zone per question (never stacks).
+      for (const n of z.names){ const p=r.players[n]; const ci=inv[n][qi]; if(ci!==undefined){ const t=p.card[ci]; cnt[t]=(cnt[t]||0)+1;
+          if (!safe && p.lives && (p.lives.safety===qi || (p.lifeOld && p.lifeOld.safety && p.lifeOld.safety.includes(qi)))){ cnt[t]++; safe=true; } } }
+      const need = zoneNeed(r, act, false); const ts = closeTs(r, qi); let any=false;
       for (const [t,c] of Object.entries(cnt).sort((a,b)=>b[1]-a[1])){
         if (act<=0 || c<need) continue;
-        const pct = Math.round(c*100/act);
+        const pct = Math.min(100, Math.round(c*100/act));
         card.forEach((x,i)=>{ if (x===t && z.cell[i].st===''){ any=true; z.cell[i]={st:(q.a===t?'ok':'no'), qi, pct, c, need, safe}; } });
       }
       if (!any) continue;
@@ -959,7 +960,7 @@ io.on('connection', (socket) => {
       p.lives.madad = cur; p._md = {qi:cur, list, n:tot};
       touch(socket,code,name); return cb && cb({ok:true, md:p._md});
     }
-    if (life==='safety'){ p.lives.safety = cur; touch(socket,code,name); return cb && cb({ok:true}); }   // 🛡 Safety Net: lowers the Zone's lock limit for THIS question (never stacks)
+    if (life==='safety'){ p.lives.safety = cur; touch(socket,code,name); return cb && cb({ok:true}); }   // ➕ Extra Vote: +1 vote for the Zone's count on THIS question (max +1 per Zone)
     if (!answerOnCard(r,p,cur)) return fail('આ પ્રશ્નનો જવાબ તમારા Card માં નથી. Life Line વપરાઈ નથી.');
   });
 

@@ -333,6 +333,7 @@ function uiContinue(){ let s=null; try{ s=JSON.parse(localStorage.getItem('quizS
   socket.emit('player:join',{code:s.code,name:s.name,zone:s.zone,avatar:s.avatar,clientId:getClientId(),token:s.token},res=>{ if(res&&res.ok) applyRes(s,res); else { state.joinErr=(res&&res.error)||'જોડાઈ શકાયું નહિ'; render(); } }); }
 
 function playerMark(ci){
+  if(Date.now()<(window.__chLock||0)) return;   /* 🌪 cards are moving: ignore taps for a second */
   socket.emit('player:mark',{code:state.code,name:state.name,ci});
   /* instant feedback: show the tap at once; the server state replaces it a moment later */
   try{ var r=state.room,p=r&&r.players&&r.players[state.name];
@@ -1079,6 +1080,7 @@ function render0(){
     <div class="muted">તમારા card માં જવાબ શોધીને click કરો.</div></div>`;
   }
   if(['question','locked','spinning','revealing','active'].includes(r.status)) { const lh=lifeHTML(r,p); if(lh) body+=`<div class="card">${lh}</div>`; }
+  { const zh=zchHTML(r,p); if(zh) body+=`<div class="card">${zh}</div>`; }
   if(r.status==='locked'&&!r.mstage) body+=`<div class="card muted">⏱ સમય પૂરો — next question ની રાહ જુઓ.</div>`;
   if(r.status==='ended') body+=`<div class="card muted">Game પૂરી — results ની રાહ જુઓ.</div>`;
 
@@ -1372,6 +1374,30 @@ setInterval(function(){ try{ var c=state.room&&state.room.colors; ccApplyTheme(c
   render0=function(){ _r0.apply(this,arguments); try{ if(!state.code) mount(); }catch(e){} };
   try{ if(!state.code) mount(); }catch(e){}
 })();
+</script>
+<style id="up-zch">.zchb{width:100%;margin:4px 0;padding:10px 8px;border-radius:14px;border:2px solid #7c3aed;background:linear-gradient(90deg,#ede9fe,#fae8ff);color:#4c1d95;font-weight:900;font-size:.9rem;line-height:1.3;cursor:pointer}.zchb small{display:block;font-weight:600;opacity:.8;font-size:.72rem}.zchb[disabled]{opacity:.6;cursor:default}.zchst{margin:6px 0;text-align:center;font-weight:700;font-size:.8rem;opacity:.85}.zchbn{margin:6px 0;padding:10px 14px;border-radius:14px;text-align:center;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c3aed,#db2777)}
+#chfx{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(124,58,237,.55),rgba(0,0,0,.65));color:#fff;font-weight:900;font-size:min(14vw,4rem);text-shadow:0 4px 24px #000;animation:chfade 1.1s ease forwards}#chfx i{display:block;font-style:normal;font-size:1.4em;animation:chspin 1s linear}
+@keyframes chfade{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes chspin{to{transform:rotate(540deg) scale(1.1)}}
+body.chshake .grid{animation:chshake .5s ease 2}@keyframes chshake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-7px) rotate(-1.5deg)}40%{transform:translateX(7px) rotate(1.5deg)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}</style>
+<script id="up-zch-js">
+/* 💥 Mega Chaos: when 50% of your zone press it, every OTHER zone's cards are re-dealt completely (answered cells too, so building lines break). Mode-2 onwards, once per zone per game. */
+function zchKey2(z){ return String(z||'').trim().toLowerCase(); }
+function zchVote(){ var r=state.room; if(!r||r.status!=='question'||r.paused) return;
+  socket.emit('player:zchaos',{code:state.code,name:state.name},function(res){ if(res&&!res.ok){ state.zchmsg=res.error||'Zone Chaos થઈ શક્યું નહિ.'; clearTimeout(state.zchT); state.zchT=setTimeout(function(){ state.zchmsg=''; render(); },5000); render(); } }); }
+function zchHTML(r,p){ try{ if(r.zchOff||!p||!zchKey2(p.zone)||!r.zoneProg||r.zoneProg.length<2||!(r.status==='question'||r.status==='locked')) return '';
+  if(((r.questions&&r.questions[r.curIdx]||{}).m||1)<2) return '';   /* no Chaos in Mode-1 */
+  var k=zchKey2(p.zone), q=r.curIdx, out='';
+  if(p.chz&&p.chz.qi===q){ out+='<div class="zchbn">💥 <b>MEGA CHAOS!</b> '+esc(p.chz.from)+' Zone એ Chaos વાપર્યો. તમારા Card ના ખાના ફરી ગયા, જવાબ આપેલા પણ (જવાબ ખાના સાથે જ ફરે છે). બનતી <b>અધૂરી Line તૂટી ગઈ</b>! જે Line તમે <b>Claim</b> કરી ચૂક્યા છો તે ફરી નથી.</div>'; }
+  if((r.chaosUsed||{})[k]) return out+'<div class="zchst">💥 તમારા Zone એ Mega Chaos વાપરી લીધું ✔ (ફક્ત 1 વાર)</div>';
+  var v=(r.zv||{})[k], cnt=v?(' ('+v.n+'/'+v.need+')'):'', msg=state.zchmsg?'<div class="zchst">'+esc(state.zchmsg)+'</div>':'';
+  if(r.status!=='question') return out+(p.zchv?'<div class="zchst">💥 Mega Chaos Vote નોંધાયો'+cnt+'</div>':'');
+  if(p.zchv) return out+'<button class="zchb" disabled>✔ તમારો Vote નોંધાયો'+cnt+'<small>Zone-mates ને પણ દબાવવા કહો!</small></button>'+msg;
+  return out+'<button class="zchb" onclick="zchVote()">💥 Mega Chaos'+cnt+'<small>તમારા Zone ના 50% Players દબાવે તો બધા બીજા Zone ના Card ના ખાના ફરશે અને અધૂરી Line તૂટશે (Claim કરેલી Line સલામત) · ફક્ત 1 વાર</small></button>'+msg; }catch(e){ return ''; } }
+(function(){ var seen=0; setInterval(function(){ try{ var r=state.room,p=r&&r.players&&r.players[state.name]; if(!r||!p||!p.chz||p.chz.ts===seen) return; seen=p.chz.ts;
+  if(r.status!=='question'||p.chz.qi!==r.curIdx) return; window.__chLock=Date.now()+1000;
+  var d=document.createElement('div'); d.id='chfx'; d.innerHTML='<div style="text-align:center"><i>💥</i>MEGA CHAOS!</div>'; document.body.appendChild(d);
+  document.body.classList.add('chshake'); setTimeout(function(){ try{ d.remove(); document.body.classList.remove('chshake'); }catch(e){} },1150);
+  try{ if(navigator.vibrate) navigator.vibrate([80,40,80]); }catch(e){} }catch(e){} },250); })();
 </script>
 </body>
 </html>

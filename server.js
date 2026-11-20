@@ -485,6 +485,68 @@ function emitZoneLive(code, r){
   for (const k of Object.keys(S)){ const z=S[k]; io.to(code+'#z:'+k).emit('zlive', {qi, n:z.act, c:z.c, pct: z.act>=3 ? Math.round(z.c*100/z.act) : null}); }
 }
 
+// ---------- 🌪 Zone Chaos (SOFT) ----------
+// When ZCH_PCT % of a zone's online players press 🌪 Zone Chaos, that zone sends Chaos to ALL the OTHER zones: in every player's card of those zones only the still-UNMARKED cells are shuffled
+// (answer + mode + hidden 💎⭐💣 move together); cells that already hold an answer never move. Each zone can send Chaos ONCE per game. The host can also fire it for a zone from the projector.
+const ZCH_PCT = 50, ZCH_MIN = 2, ZCH_ALL = true;   // ZCH_ALL=false -> only ONE random other zone is hit
+const ZCH_MEGA = true;   // true = 💥 MEGA Chaos (every cell moves, answered ones too, and the shuffle never leaves a full row/column/diagonal of marks); false = Soft (only empty cells move)
+const ZCH_MIN_MODE = 2;  // Chaos exists from Mode-2 onwards (never in Mode-1)
+const zchKey = z => String(z||'').trim().toLowerCase();
+function zoneRoster(r, code){
+  const now=Date.now(), m={};
+  for (const [n,p] of Object.entries(r.players||{})){
+    const k=zchKey(p.zone); if(!k) continue;
+    if(!p.bot){ const t=SEEN[code+'|'+n]||0; if(now-t > ONLINE_MS+5000) continue; }
+    const o=m[k]||(m[k]={k,label:String(p.zone).trim(),names:[]}); o.names.push(n);
+  }
+  return m;
+}
+function softShuffle(p){
+  const U=[]; for(let i=0;i<25;i++) if(p.marks[i]===undefined) U.push(i);
+  if(U.length<2) return false;
+  let ord=U.map((_,j)=>j); for(let t=0;t<4;t++){ ord=shuffle(U.map((_,j)=>j)); if(ord.some((v,j)=>v!==j)) break; }
+  const card=p.card.slice(), cm=p.cm?p.cm.slice():null, hid=p.hid?p.hid.slice():null;
+  U.forEach((ci,j)=>{ const from=U[ord[j]]; p.card[ci]=card[from]; if(cm) p.cm[ci]=cm[from]; if(hid) p.hid[ci]=hid[from]; });
+  return true;
+}
+// 💥 Mega: the cards are re-dealt (answer + mode + hidden item + the mark sitting on it). A line the player has already CLAIMED (valid claim) is FROZEN: those cells never move.
+// Everything else (unfinished lines, unclaimed lines, empty cells) is shuffled, using a permutation that leaves no OTHER row / column / diagonal completely marked,
+// so building lines break and shuffle luck can never hand anybody a new line.
+function frozenOf(p, r){
+  const cl=p.claims||{}; const all=[...Array(25).keys()];
+  if(cl.full && cl.full.valid) return {cells:new Set(all), lines:LINES.slice()};
+  let k=0; for(let n=1;n<=5;n++) if(cl['line'+n] && cl['line'+n].valid) k=n;
+  if(!k) return {cells:new Set(), lines:[]};
+  const green=new Set(); for(const [ci,qi] of Object.entries(p.marks)){ const q=r.questions[qi]; if(q && q.a===p.card[+ci]) green.add(+ci); }
+  const lines=LINES.filter(L=>L.every(i=>green.has(i))).slice(0,k);       // as many complete lines as were claimed
+  return {cells:new Set([].concat(...lines)), lines};
+}
+function megaShuffle(p, r){
+  const F=frozenOf(p,r), old=Object.keys(p.marks).map(Number), free=[...Array(25).keys()].filter(i=>!F.cells.has(i));
+  if(free.length<2) return false;
+  const live=LINES.filter(L=>!F.lines.includes(L)); let best=null, bestN=1e9, inv=null;
+  for(let t=0;t<300;t++){
+    const sh=shuffle(free), perm=new Array(25); for(let i=0;i<25;i++) perm[i]=i; free.forEach((n,j)=>{ perm[n]=sh[j]; });   // perm[newIdx] = oldIdx
+    const iv=new Array(25); perm.forEach((o,n)=>{ iv[o]=n; });
+    const mk=new Set(old.map(o=>iv[o])); const n=live.filter(L=>L.every(i=>mk.has(i))).length;
+    if(n<bestN){ best=perm; bestN=n; inv=iv; if(n===0) break; }
+  }
+  const card=p.card.slice(), cm=p.cm?p.cm.slice():null, hid=p.hid?p.hid.slice():null, marks=p.marks, nm={};
+  best.forEach((o,n)=>{ p.card[n]=card[o]; if(cm) p.cm[n]=cm[o]; if(hid) p.hid[n]=hid[o]; });
+  old.forEach(o=>{ nm[inv[o]]=marks[o]; }); p.marks=nm;
+  return true;
+}
+function zchFire(code, src){
+  const r=rooms[code]; if(!r) return 0;
+  r.chaosUsed=r.chaosUsed||{}; r.chaosLog=r.chaosLog||[]; r.chaosUsed[src.k]=true;
+  const roster={}; for (const p of Object.values(r.players)){ const k=zchKey(p.zone); if(k&&k!==src.k) roster[k]=1; }
+  let hit=Object.keys(roster); if(!ZCH_ALL && hit.length) hit=[hit[Math.floor(Math.random()*hit.length)]];
+  const now=Date.now(); let n=0, zs=new Set(hit);
+  for (const p of Object.values(r.players)) if (zs.has(zchKey(p.zone))){ if(ZCH_MEGA) megaShuffle(p,r); else softShuffle(p); p.chz={qi:r.curIdx, from:src.label, ts:now}; p.chaosAt=now; n++; }
+  r.chaosLog.push({k:src.k, from:src.label, qi:r.curIdx, n, z:hit.length, ts:now}); if(r.chaosLog.length>60) r.chaosLog.shift();
+  broadcast(code); return n;
+}
+
 const SEEN = {};   // code|key -> last time that player's browser talked to us (join, tap, resync every 4 s)
 function seen(code,key){ if (key) SEEN[code+'|'+key]=Date.now(); }
 const ONLINE_MS = +process.env.ONLINE_MS || 10000;
@@ -900,6 +962,7 @@ io.on('connection', (socket) => {
     if (r.timerEnd && Date.now()>r.timerEnd+500) return;      // the server clock decides when time is up
     const p = r.players[name]; if(!p) return;
     ci = +ci; if(!Number.isInteger(ci) || ci<0 || ci>24) return;
+    if (p.chaosAt && Date.now()-p.chaosAt < 700){ touch(socket,code,name); return; }   // 🌪 cards just moved: ignore a tap aimed at the OLD layout, resync instead
     if(!p.markTs) p.markTs = {}; if(!p.lives) p.lives = {};
     const old = markCell(p, r.curIdx);
     if (old!==undefined){
@@ -965,6 +1028,38 @@ io.on('connection', (socket) => {
   });
 
   // 📣 Zone Pukar: a zone-mate who ALREADY answered this question helps (first PUKAR_MAX only)
+
+  // 🌪 players press the button inside their own zone; at ZCH_PCT % of the zone the Chaos goes out
+  socket.on('player:zchaos', ({code,name}, cb) => {
+    seen(code,name); const r=rooms[code]; const fail=m=>cb&&cb({ok:false,error:m});
+    if(!r || r.status!=='question' || r.paused || r.zchOff) return fail('હમણાં Zone Chaos થઈ શકે નહિ.');
+    if(((r.questions[r.curIdx]||{}).m||1)<ZCH_MIN_MODE) return fail('Mode-1 માં Chaos નથી. Mode-2 થી શરૂ થાય છે.');
+    const p=r.players[name]; if(!p) return fail('Player મળ્યો નહિ.'); const k=zchKey(p.zone); if(!k) return fail('તમારો Zone નક્કી નથી.');
+    r.chaosUsed=r.chaosUsed||{};
+    if(r.chaosUsed[k]) return fail('તમારા Zone નું Chaos વપરાઈ ગયું છે. એક Zone ફક્ત એક જ વાર વાપરી શકે.');
+    const roster=zoneRoster(r,code), me=roster[k]; const online=me?me.names.length:1;
+    if(!Object.values(r.players).some(o=>zchKey(o.zone)&&zchKey(o.zone)!==k)) return fail('બીજો કોઈ Zone નથી.');
+    p.zchv=true;
+    const need=Math.max(ZCH_MIN, Math.ceil(online*ZCH_PCT/100));
+    const votes=me?me.names.filter(n=>r.players[n].zchv).length:1;
+    r.zv=r.zv||{}; r.zv[k]={n:votes,need};
+    if(votes>=need) zchFire(code,{k,label:(me&&me.label)||String(p.zone).trim()}); else broadcast(code);
+    cb&&cb({ok:true,n:votes,need});
+  });
+  // 🌪 host fires it on behalf of a zone from the projector (same once-per-zone rule) / switches the feature off
+  socket.on('host:zchaos', ({code,zone}, cb) => {
+    const r=rooms[code]; const fail=m=>cb&&cb({ok:false,error:m});
+    if(!r || r.status!=='question' || r.paused) return fail('ફક્ત પ્રશ્ન ચાલુ હોય ત્યારે થાય.');
+    if(((r.questions[r.curIdx]||{}).m||1)<ZCH_MIN_MODE) return fail('Mode-1 માં Chaos નથી. Mode-2 થી શરૂ થાય છે.');
+    r.chaosUsed=r.chaosUsed||{}; const k=zchKey(zone); let label=null;
+    for (const p of Object.values(r.players)) if(zchKey(p.zone)===k){ label=String(p.zone).trim(); break; }
+    if(!k||!label) return fail('Zone મળ્યો નહિ.');
+    if(r.chaosUsed[k]) return fail('આ Zone નું Chaos વપરાઈ ગયું છે.');
+    if(!Object.values(r.players).some(o=>zchKey(o.zone)&&zchKey(o.zone)!==k)) return fail('બીજો કોઈ Zone નથી.');
+    const n=zchFire(code,{k,label}); cb&&cb({ok:true,zone:label,n});
+  });
+  socket.on('host:zchaosOn', ({code,on}) => { const r=rooms[code]; if(!r) return; r.zchOff=!on; broadcast(code); });
+
   socket.on('player:pukarHelp', ({code,name,asker}, cb) => {
     seen(code,name); const fail=m=>cb&&cb({ok:false,error:m});
     const r=rooms[code]; if(!r||r.status!=='question'||r.paused) return fail('હમણાં મદદ કરી શકાય નહિ.');

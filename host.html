@@ -3201,5 +3201,42 @@ function ccApplyTheme(hex){ try{ hex=hex||''; if(hex===_thk) return; var first=(
 #pj .pjmode{display:inline-flex;flex-direction:column;align-items:center;gap:.1em;max-width:94%;margin:.2vh auto .6vh;padding:.2em 1.3em .22em;border-radius:.7em;font-family:'Noto Serif Gujarati','Hind Vadodara',serif;font-weight:900;font-size:clamp(1.6rem,5.4vh,4rem);line-height:1.25;letter-spacing:.01em;color:#fff7d6;text-shadow:0 2px 0 rgba(0,0,0,.35),0 0 .7em rgba(253,224,71,.55);border:2px solid rgba(253,230,138,.75);box-shadow:0 0 0 4px rgba(0,0,0,.25),0 10px 40px rgba(0,0,0,.5),inset 0 0 30px rgba(255,255,255,.12);text-align:center}
 #pj .pjmode small{display:block;margin:0;font-family:'Cinzel','Playfair Display',serif;font-weight:700;font-size:.3em;letter-spacing:.28em;text-transform:uppercase;color:#fde68a;opacity:.95;text-shadow:none}
 </style>
+<style id="up-pjzch">
+/* 🌪 Zone Chaos on the projector: live banner (top centre) + host control (bottom-left) */
+#pj .pjzcw{position:fixed;left:calc(max(14px,env(safe-area-inset-left,0px)) + 58px);bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:7;display:none;gap:6px;align-items:center;opacity:.35;transition:opacity .2s}
+#pj .pjzcw:hover,#pj .pjzcw:focus-within{opacity:1}
+#pj .pjzcw button{border:0;border-radius:99px;padding:10px 16px;font-weight:900;font-size:.95rem;color:#fff;background:linear-gradient(90deg,#7c3aed,#db2777);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+#pj .pjzcw button.off{background:#4b5563}
+#pj .pjzcw select{border:0;border-radius:99px;padding:9px 8px;font-weight:800;background:rgba(255,255,255,.9);color:#111827;max-width:34vw}
+#pj .pjzbn{position:fixed;top:max(12px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:7;display:none;max-width:78vw;text-align:center;padding:.35em 1.3em;border-radius:99px;font-weight:900;font-size:clamp(1.1rem,3.4vh,2.4rem);color:#fff;background:linear-gradient(90deg,#7c3aed,#db2777);box-shadow:0 0 34px rgba(219,39,119,.7);animation:pjzp 1.2s ease-in-out infinite alternate}
+#pj .pjzbn.vote{animation:none;background:rgba(17,24,39,.78);box-shadow:none;font-size:clamp(.9rem,2.4vh,1.6rem)}
+@keyframes pjzp{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.06)}}
+</style>
+<script id="up-pjzch">
+/* 🌪 Zone Chaos controls on the projector screen */
+function zchToast(t){ try{ var d=document.createElement('div'); d.textContent=t; d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#111827;color:#fff;padding:12px 20px;border-radius:99px;font-weight:800;box-shadow:0 8px 28px rgba(0,0,0,.4)'; document.body.appendChild(d); setTimeout(function(){ d.remove() },3200); }catch(e){} }
+function hostZchaos(zone){ if(!zone) return; socket.emit('host:zchaos',{code:state.code,zone:zone},function(res){ zchToast(res&&res.ok?('💥 '+res.zone+' એ Mega Chaos વાપર્યો ('+res.n+' Players પર અસર)'):((res&&res.error)||'Chaos થઈ શક્યું નહિ')); }); }
+function hostZchaosOn(on){ socket.emit('host:zchaosOn',{code:state.code,on:!!on}); }
+(function(){
+ function pjEl(cls,make){ var pj=document.getElementById('pj'); if(!pj) return null; var e=pj.querySelector('.'+cls); if(!e){ e=make(); e.className=cls; pj.appendChild(e); } return e; }
+ function esc3(t){ return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); }
+ setInterval(function(){ try{ var pj=document.getElementById('pj'); if(!pj||pj.style.display==='none') return; var r=state.room; if(!r) return;
+  var w=pjEl('pjzcw',function(){ var d=document.createElement('div'); d.innerHTML='<select class="pjzs" aria-label="Zone"></select><button type="button" class="pjzf">💥 Mega Chaos</button><button type="button" class="pjzo"></button>';
+    d.querySelector('.pjzf').onclick=function(e){ e.stopPropagation(); hostZchaos(d.querySelector('.pjzs').value); };
+    d.querySelector('.pjzo').onclick=function(e){ e.stopPropagation(); hostZchaosOn(!!state.room.zchOff); }; return d; });
+  var mm=((r.questions&&r.questions[r.curIdx]||{}).m||1); var q=!!(r.status==='question'&&r.curIdx!=null&&mm>=2); w.style.display=q?'flex':'none';
+  if(q){ var used=r.chaosUsed||{}; var zs=(r.zoneProg||[]).filter(function(z){return !used[String(z.z).trim().toLowerCase()]}).map(function(z){return z.z}); var sel=w.querySelector('.pjzs'), key=zs.join('|');
+    if(sel.getAttribute('data-k')!==key && document.activeElement!==sel){ sel.setAttribute('data-k',key); sel.innerHTML=zs.map(function(z){return '<option>'+esc3(z)+'</option>'}).join('')||'<option value="">બધા Zone વપરાઈ ગયા</option>'; }
+    var o=w.querySelector('.pjzo'); var t=r.zchOff?'🗳 Vote બંધ':'🗳 Vote ચાલુ'; if(o.textContent!==t) o.textContent=t; o.className='pjzo'+(r.zchOff?' off':''); }
+  var b=pjEl('pjzbn',function(){ return document.createElement('div'); }), txt='', cls='pjzbn';
+  var lab={}; (r.zoneProg||[]).forEach(function(z){ lab[String(z.z).trim().toLowerCase()]=z.z; });
+  var ev=(r.chaosLog||[]).filter(function(e){ return e.qi===r.curIdx; });
+  if((r.status==='question'||r.status==='locked')&&ev.length){ txt='💥 MEGA CHAOS! '+ev.map(function(e){return e.from}).join(', ')+' એ Chaos વાપર્યો!'; }
+  else if(r.status==='question'&&!r.zchOff&&mm>=2){ var usedK=Object.keys(r.chaosUsed||{}).filter(function(k){return r.chaosUsed[k]});
+    var rows=Object.keys(r.zv||{}).map(function(k){ var v=r.zv[k]; return (v&&v.n>0&&!(r.chaosUsed||{})[k])?{z:lab[k]||k,n:v.n,need:v.need,x:v.n/v.need}:null; }).filter(Boolean).sort(function(a,b){return b.x-a.x}).slice(0,3);
+    if(rows.length||usedK.length){ txt='💥 '+rows.map(function(x){return x.z+' '+x.n+'/'+x.need}).join(' · ')+(usedK.length?((rows.length?'  |  ':'')+'✔ વપરાયું: '+usedK.map(function(k){return lab[k]||k}).join(', ')):''); cls+=' vote'; } }
+  b.style.display=txt?'block':'none'; if(txt&&b.textContent!==txt) b.textContent=txt; b.className=cls; }catch(e){} },400);
+})();
+</script>
 </body>
 </html>

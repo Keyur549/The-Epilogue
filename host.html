@@ -3231,7 +3231,7 @@ function hostZchaosOn(on){ socket.emit('host:zchaosOn',{code:state.code,on:!!on}
   var b=pjEl('pjzbn',function(){ return document.createElement('div'); }), txt='', cls='pjzbn';
   var lab={}; (r.zoneProg||[]).forEach(function(z){ lab[String(z.z).trim().toLowerCase()]=z.z; });
   var ev=(r.chaosLog||[]).filter(function(e){ return e.qi===r.curIdx; });
-  if((r.status==='question'||r.status==='locked')&&ev.length){ txt='💥 MEGA CHAOS! '+ev.map(function(e){return e.from}).join(', ')+' એ Chaos વાપર્યો!'; }
+  if((r.status==='question'||r.status==='locked')&&ev.length){ txt=ev.map(function(e){ return e.blk?'🛡 '+e.blk.join(', ')+' નું Zone Shield! '+e.from+' નું Chaos પાછું ફર્યું':'💥 MEGA CHAOS! '+e.from+' એ Chaos વાપર્યો!'; }).join('   |   '); }
   else if(r.status==='question'&&!r.zchOff&&mm>=2){ var usedK=Object.keys(r.chaosUsed||{}).filter(function(k){return r.chaosUsed[k]});
     var rows=Object.keys(r.zv||{}).map(function(k){ var v=r.zv[k]; return (v&&v.n>0&&!(r.chaosUsed||{})[k])?{z:lab[k]||k,n:v.n,need:v.need,x:v.n/v.need}:null; }).filter(Boolean).sort(function(a,b){return b.x-a.x}).slice(0,3);
     if(rows.length||usedK.length){ txt='💥 '+rows.map(function(x){return x.z+' '+x.n+'/'+x.need}).join(' · ')+(usedK.length?((rows.length?'  |  ':'')+'✔ વપરાયું: '+usedK.map(function(k){return lab[k]||k}).join(', ')):''); cls+=' vote'; } }

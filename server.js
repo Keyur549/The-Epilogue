@@ -419,7 +419,7 @@ function zoneProgOf(room){ const m={}, q=room.curIdx, live=(room.status==='quest
 // 🎨 optional colour overrides (RGB/HEX) — empty = game keeps its original colours
 function cleanColors(c){ if(!c||typeof c!=='object') return null; const o={}; let n=0; for(const k of Object.keys(c)){ if(n>=60) break; if(/^[a-z][a-z0-9]{0,7}$/.test(k) && /^#[0-9a-fA-F]{6}$/.test(String(c[k]||''))){ o[k]=String(c[k]).toLowerCase(); n++; } } return n?o:null; }
 function slimBase(room){
-  const { clientMap, tokens, cert, players, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, sank, karma, qOpenAt, pukar, ...rest } = room;
+  const { clientMap, tokens, cert, players, zshU, zoneCards, zoneSet, zoneInfo, results, zlock, mystery, voteSet, sank, karma, qOpenAt, pukar, ...rest } = room;
   const n = Object.keys(players).length;
   if (room.status==='revealed'){
     const keep = {};
@@ -491,6 +491,21 @@ function emitZoneLive(code, r){
 const ZCH_PCT = 50, ZCH_MIN = 2, ZCH_ALL = true;   // ZCH_ALL=false -> only ONE random other zone is hit
 const ZCH_MEGA = true;   // true = 💥 MEGA Chaos (every cell moves, answered ones too, and the shuffle never leaves a full row/column/diagonal of marks); false = Soft (only empty cells move)
 const ZCH_MIN_MODE = 2;  // Chaos exists from Mode-2 onwards (never in Mode-1)
+// 🛡 SILENT Zone Shield: every time ZSH_PCT % of a zone's online players have completed ANOTHER run of ZSH_RUN correct answers in a row (counting only questions whose answer is on that player's own card),
+// the zone secretly earns one more Shield (no limit on how many times over the game). Nobody is told (that would reveal that answers were right). When a Chaos hits a zone that holds a Shield, one Shield is used up,
+// that zone's cards stay untouched and the Chaos BOUNCES BACK: the attacking zone's cards are shuffled instead.
+const ZSH_PCT = 40, ZSH_RUN = 3;
+function zoneShields(r, code, k){
+  const me=zoneRoster(r,code)[k]; if(!me||!me.names.length) return 0;
+  const seq=r.usedIdx||[], pos=seq.indexOf(r.curIdx), upto=pos<0?seq.length:pos, runs=[];
+  for(const n of me.names){ const p=r.players[n]; let run=0, done=0;
+    for(let i=0;i<upto;i++){ const qi=seq[i], q=r.questions[qi]; if(!q||!p.card.includes(q.a)) continue;
+      const ci=markCell(p,qi); if(ci!==undefined && p.card[ci]===q.a){ if(++run===ZSH_RUN){ done++; run=0; } } else run=0; }
+    runs.push(done); }
+  const need=Math.max(1, Math.ceil(me.names.length*ZSH_PCT/100)); let earned=0;
+  for(let n=1;n<=30;n++){ if(runs.filter(x=>x>=n).length>=need) earned=n; else break; }
+  return earned-((r.zshU||{})[k]||0);
+}
 const zchKey = z => String(z||'').trim().toLowerCase();
 function zoneRoster(r, code){
   const now=Date.now(), m={};
@@ -541,9 +556,15 @@ function zchFire(code, src){
   r.chaosUsed=r.chaosUsed||{}; r.chaosLog=r.chaosLog||[]; r.chaosUsed[src.k]=true;
   const roster={}; for (const p of Object.values(r.players)){ const k=zchKey(p.zone); if(k&&k!==src.k) roster[k]=1; }
   let hit=Object.keys(roster); if(!ZCH_ALL && hit.length) hit=[hit[Math.floor(Math.random()*hit.length)]];
-  const now=Date.now(); let n=0, zs=new Set(hit);
-  for (const p of Object.values(r.players)) if (zs.has(zchKey(p.zone))){ if(ZCH_MEGA) megaShuffle(p,r); else softShuffle(p); p.chz={qi:r.curIdx, from:src.label, ts:now}; p.chaosAt=now; n++; }
-  r.chaosLog.push({k:src.k, from:src.label, qi:r.curIdx, n, z:hit.length, ts:now}); if(r.chaosLog.length>60) r.chaosLog.shift();
+  const now=Date.now(); let n=0; r.zshU=r.zshU||{};
+  const blocked=[]; for (const k2 of hit) if (zoneShields(r,code,k2)>0){ r.zshU[k2]=(r.zshU[k2]||0)+1; blocked.push(k2); }
+  const zs=new Set(hit.filter(k2=>!blocked.includes(k2))), bl=new Set(blocked), blkNames=[];
+  for (const p of Object.values(r.players)){ const pk=zchKey(p.zone);
+    if (zs.has(pk)){ if(ZCH_MEGA) megaShuffle(p,r); else softShuffle(p); p.chz={qi:r.curIdx, from:src.label, ts:now}; p.chaosAt=now; n++; }
+    else if (bl.has(pk)){ p.chsb={qi:r.curIdx, from:src.label, ts:now}; if(!blkNames.includes(String(p.zone).trim())) blkNames.push(String(p.zone).trim()); } }
+  if (blocked.length){ const by=blkNames.join(', ');   // bounce: the attacking zone's cards are shuffled
+    for (const p of Object.values(r.players)) if (zchKey(p.zone)===src.k){ if(ZCH_MEGA) megaShuffle(p,r); else softShuffle(p); p.chz={qi:r.curIdx, from:by, ts:now, refl:true}; p.chaosAt=now; } }
+  r.chaosLog.push({k:src.k, from:src.label, qi:r.curIdx, n, z:hit.length, ts:now, blk:blkNames.length?blkNames:undefined}); if(r.chaosLog.length>60) r.chaosLog.shift();
   broadcast(code); return n;
 }
 

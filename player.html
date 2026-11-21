@@ -1387,15 +1387,20 @@ function zchVote(){ var r=state.room; if(!r||r.status!=='question'||r.paused) re
 function zchHTML(r,p){ try{ if(r.zchOff||!p||!zchKey2(p.zone)||!r.zoneProg||r.zoneProg.length<2||!(r.status==='question'||r.status==='locked')) return '';
   if(((r.questions&&r.questions[r.curIdx]||{}).m||1)<2) return '';   /* no Chaos in Mode-1 */
   var k=zchKey2(p.zone), q=r.curIdx, out='';
-  if(p.chz&&p.chz.qi===q){ out+='<div class="zchbn">💥 <b>MEGA CHAOS!</b> '+esc(p.chz.from)+' Zone એ Chaos વાપર્યો. તમારા Card ના ખાના ફરી ગયા, જવાબ આપેલા પણ (જવાબ ખાના સાથે જ ફરે છે). બનતી <b>અધૂરી Line તૂટી ગઈ</b>! જે Line તમે <b>Claim</b> કરી ચૂક્યા છો તે ફરી નથી.</div>'; }
+  if(p.chsb&&p.chsb.qi===q) out+='<div class="zchbn" style="background:linear-gradient(135deg,#0e7490,#164e63)">🛡 <b>ZONE SHIELD!</b> '+esc(p.chsb.from)+' Zone નું Chaos તમારા Zone ના Shield એ રોક્યું અને એમના પર જ પાછું ફર્યું! 😎</div>';
+  if(p.chz&&p.chz.qi===q&&p.chz.refl){ out+='<div class="zchbn">🛡 <b>Chaos પાછું ફર્યું!</b> '+esc(p.chz.from)+' Zone પાસે Shield હતું — Chaos તમારા Zone ના Card પર જ પાછું આવ્યું. બનતી <b>અધૂરી Line તૂટી ગઈ</b>! જે Line Claim કરી ચૂક્યા છો તે સલામત.</div>'; }
+  else if(p.chz&&p.chz.qi===q){ out+='<div class="zchbn">💥 <b>MEGA CHAOS!</b> '+esc(p.chz.from)+' Zone એ Chaos વાપર્યો. તમારા Card ના ખાના ફરી ગયા, જવાબ આપેલા પણ (જવાબ ખાના સાથે જ ફરે છે). બનતી <b>અધૂરી Line તૂટી ગઈ</b>! જે Line તમે <b>Claim</b> કરી ચૂક્યા છો તે ફરી નથી.</div>'; }
   if((r.chaosUsed||{})[k]) return out+'<div class="zchst">💥 તમારા Zone એ Mega Chaos વાપરી લીધું ✔ (ફક્ત 1 વાર)</div>';
   var v=(r.zv||{})[k], cnt=v?(' ('+v.n+'/'+v.need+')'):'', msg=state.zchmsg?'<div class="zchst">'+esc(state.zchmsg)+'</div>':'';
   if(r.status!=='question') return out+(p.zchv?'<div class="zchst">💥 Mega Chaos Vote નોંધાયો'+cnt+'</div>':'');
   if(p.zchv) return out+'<button class="zchb" disabled>✔ તમારો Vote નોંધાયો'+cnt+'<small>Zone-mates ને પણ દબાવવા કહો!</small></button>'+msg;
   return out+'<button class="zchb" onclick="zchVote()">💥 Mega Chaos'+cnt+'<small>તમારા Zone ના 50% Players દબાવે તો બધા બીજા Zone ના Card ના ખાના ફરશે અને અધૂરી Line તૂટશે (Claim કરેલી Line સલામત) · ફક્ત 1 વાર</small></button>'+msg; }catch(e){ return ''; } }
+(function(){ var sn=0; setInterval(function(){ try{ var r=state.room,p=r&&r.players&&r.players[state.name]; if(!r||!p||!p.chsb||p.chsb.ts===sn) return; sn=p.chsb.ts; if(p.chsb.qi!==r.curIdx) return;
+  var d=document.createElement('div'); d.id='chfx'; d.style.background='rgba(8,70,90,.86)'; d.innerHTML='<div style="text-align:center"><i>🛡</i>ZONE SHIELD!</div>'; document.body.appendChild(d); setTimeout(function(){ try{d.remove();}catch(e){} },1150);
+  try{ if(navigator.vibrate) navigator.vibrate([40,30,120]); }catch(e){} }catch(e){} },250); })();
 (function(){ var seen=0; setInterval(function(){ try{ var r=state.room,p=r&&r.players&&r.players[state.name]; if(!r||!p||!p.chz||p.chz.ts===seen) return; seen=p.chz.ts;
   if(r.status!=='question'||p.chz.qi!==r.curIdx) return; window.__chLock=Date.now()+1000;
-  var d=document.createElement('div'); d.id='chfx'; d.innerHTML='<div style="text-align:center"><i>💥</i>MEGA CHAOS!</div>'; document.body.appendChild(d);
+  var d=document.createElement('div'); d.id='chfx'; d.innerHTML='<div style="text-align:center"><i>'+(p.chz.refl?'🛡':'💥')+'</i>'+(p.chz.refl?'પાછું ફર્યું!':'MEGA CHAOS!')+'</div>'; document.body.appendChild(d);
   document.body.classList.add('chshake'); setTimeout(function(){ try{ d.remove(); document.body.classList.remove('chshake'); }catch(e){} },1150);
   try{ if(navigator.vibrate) navigator.vibrate([80,40,80]); }catch(e){} }catch(e){} },250); })();
 </script>
